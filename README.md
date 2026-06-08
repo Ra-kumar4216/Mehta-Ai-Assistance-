@@ -51,8 +51,7 @@ Mehta is an offline-friendly, voice-controlled AI assistant for Windows, macOS, 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/mehta-assistant.git
-cd mehta-assistant
+git clone https://github.com/Ra-kumar4216/Mehta-Ai-Assistance-
 ```
 
 ### 2. Install dependencies
