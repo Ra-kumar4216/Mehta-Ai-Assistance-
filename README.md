@@ -183,4 +183,8 @@ This project is licensed under the [MIT License](LICENSE).
 
 ---
 
+## 📄 Live here
+
+https://mehta-ai-assistance.vercel.app/
+
 <p align="center">Made with ❤️ — Talk to your machine, not at it.</p>
