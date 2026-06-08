@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mehta AI Assistant</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #ffffff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .chat-container { width: 450px; height: 600px; background: #1e1e1e; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.5); overflow: hidden; }
+        .chat-header { background: #2563eb; padding: 15px; text-align: center; font-size: 1.2rem; font-weight: bold; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .message { max-width: 75%; padding: 10px 14px; border-radius: 8px; margin: 2px 0; line-height: 1.4; }
+        .user { background: #2563eb; align-self: flex-end; color: white; border-bottom-right-radius: 2px; }
+        .bot { background: #333; align-self: flex-start; color: #f3f4f6; border-bottom-left-radius: 2px; }
+        .chat-input-area { display: flex; padding: 15px; background: #1a1a1a; gap: 10px; }
+        input { flex: 1; padding: 12px; background: #2d2d2d; border: none; border-radius: 6px; color: white; font-size: 1rem; }
+        input:focus { outline: 2px solid #2563eb; }
+        button { background: #2563eb; border: none; color: white; padding: 0 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">🎙️ Mehta AI Assistant</div>
+    <div class="chat-messages" id="chat-box">
+        <div class="message bot">नमस्ते रतन! मैं मेहता एआई असिस्टेंट हूँ। मैं आपकी क्या मदद कर सकता हूँ?</div>
+    </div>
+    <div class="chat-input-area">
+        <input type="text" id="user-input" placeholder="Type your message here..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    async function sendMessage() {
+        const inputField = document.getElementById("user-input");
+        const chatBox = document.getElementById("chat-box");
+        const messageText = inputField.value.trim();
+        
+        if (!messageText) return;
+
+        // User Message UI
+        const userDiv = document.createElement("div");
+        userDiv.className = "message user";
+        userDiv.innerText = messageText;
+        chatBox.appendChild(userDiv);
+        inputField.value = "";
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Bot Thinking UI
+        const botDiv = document.createElement("div");
+        botDiv.className = "message bot";
+        botDiv.innerText = "Thinking...";
+        chatBox.appendChild(botDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        try {
+            // Vercel Live API Call
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: messageText })
+            });
+            
+            const data = await response.json();
+            botDiv.innerText = data.reply || data.error || "Something went wrong.";
+        } catch (error) {
+            botDiv.innerText = "Error connecting to server.";
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
