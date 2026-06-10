@@ -91,7 +91,7 @@ def chat():
         })
 
     # 🎯 Model Selection: Image ke liye Gemini Vision, normal ke liye DeepSeek
-    selected_model = "google/gemini-2.5-flash" if image_base64 else "deepseek/deepseek-chat"
+    selected_model = "google/gemini-2.5-flash:free" if image_base64 else "deepseek/deepseek-chat"
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
