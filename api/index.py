@@ -34,11 +34,11 @@ def chat():
     live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai"]
     search_context = ""
     
-    if any(keyword in user_message.lower() for keyword in live_keywords):
-        # 🎯 Query Optimizer: Hindi inputs ko search ke liye clean aur optimize karna
+  if any(keyword in user_message.lower() for keyword in live_keywords):
+        # 🎯 Query Optimizer: Agar Nitish ya Nishant ke baare me pucha jaye, toh automatic sahi search term banana
         search_query = user_message
-        if "beta" in user_message.lower() or "padhe" in user_message.lower():
-            search_query = "Nitish Kumar son Nishant Kumar education qualification"
+        if "nishant" in user_message.lower() or "nitish" in user_message.lower():
+            search_query = "Nitish Kumar son Nishant Kumar education"
             
         search_context = internet_search(search_query)
 
