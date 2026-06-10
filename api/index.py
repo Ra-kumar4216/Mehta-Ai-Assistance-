@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import requests
+import re
 from duckduckgo_search import DDGS  # Real-time search ke liye
 
 app = Flask(__name__)
@@ -22,24 +23,35 @@ def internet_search(query):
         print(f"Search Error: {e}")
     return "No live internet data found."
 
-# 🎯 AI Query Optimizer Function: Yeh har tarah ke ulte-seedhe sawal ko perfect search term banayega
+# 🎯 AI Query Optimizer Function: Yeh har tarah ke sawal ko perfect search term banayega
 def optimize_search_query(user_msg):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
-    # AI ko bolna ki search ke liye sirf keywords nikal ke de
     payload = {
         "model": "deepseek/deepseek-chat",
         "messages": [
-            {"role": "system", "content": "You are a search query optimizer. Convert the user's input (regardless of letter casing, typos, or language like Hindi/Hinglish) into a single, clean English search engine query focused on fetching factual data. Respond ONLY with the optimized search string, nothing else."},
+            {
+                "role": "system", 
+                "content": "You are a precise search query optimizer. Convert the user's input (regardless of letter casing, typos, or language like Hindi/Hinglish) into a single, clean English search engine query focused on fetching factual data. Respond ONLY with the plain text search keywords. Never use markdown, never wrap in JSON, and do not include any conversational filler."
+            },
             {"role": "user", "content": user_msg}
         ]
     }
     try:
         res = requests.post(OPENROUTER_URL, headers=headers, json=payload)
-        return res.json()['choices'][0]['message']['content'].strip().replace('"', '')
-    except:
+        res_data = res.json()
+        raw_content = res_data['choices'][0]['message']['content'].strip()
+        
+        # 🧼 Filter: Agar DeepSeek reasoning/thinking tags <think>...</think> bhejta hai, toh use hatayein
+        clean_query = re.sub(r'<think>.*?</think>', '', raw_content, flags=re.DOTALL).strip()
+        
+        # Faltu ke quotes aur brackets saaf karna
+        clean_query = clean_query.replace('"', '').replace("'", "").replace('{', '').replace('}', '')
+        return clean_query if clean_query else user_msg
+    except Exception as e:
+        print(f"Optimization Error: {e}")
         return user_msg  # Fallback agar AI fail ho jaye
 
 @app.route('/api/chat', methods=['POST'])
@@ -50,8 +62,8 @@ def chat():
     if not user_message:
         return jsonify({"error": "No message provided"}), 400
 
-    # 🧠 Super Smart Intent Detection
-    live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai", "who is", "where"]
+    # 🧠 Super Smart Intent Detection (Har possible context keyword shamil hai)
+    live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai", "who is", "where", "qualify"]
     search_context = ""
     
     if any(keyword in user_message.lower() for keyword in live_keywords):
@@ -89,7 +101,12 @@ def chat():
     try:
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload)
         res_data = response.json()
-        reply = res_data['choices'][0]['message']['content']
-        return jsonify({"reply": reply})
+        
+        if 'choices' in res_data:
+            reply = res_data['choices'][0]['message']['content']
+            return jsonify({"reply": reply})
+        else:
+            return jsonify({"error": "Unexpected response structure from OpenRouter", "details": res_data}), 500
+            
     except Exception as e:
         return jsonify({"error": str(e)}), 500
