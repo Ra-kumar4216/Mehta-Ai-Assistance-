@@ -44,7 +44,6 @@ def optimize_search_query(user_msg):
         res_data = res.json()
         raw_content = res_data['choices'][0]['message']['content'].strip()
         
-        # 🧼 Filter: Agar DeepSeek reasoning/thinking tags bhejta hai
         clean_query = re.sub(r'<think>.*?</think>', '', raw_content, flags=re.DOTALL).strip()
         clean_query = clean_query.replace('"', '').replace("'", "").replace('{', '').replace('}', '')
         return clean_query if clean_query else user_msg
@@ -58,21 +57,17 @@ def chat():
     user_message = data.get("message", "").strip()
     image_base64 = data.get("image", None)  # 📸 Frontened se image data lena
     
-    # Agar na text message hai aur na image, toh error dena
     if not user_message and not image_base64:
         return jsonify({"error": "No message or image provided"}), 400
 
     search_context = ""
     
-    # 🧠 Live search tabhi chalega jab sirf text pucha jaye (vision me iski zarurat nahi)
     if user_message and not image_base64:
         live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai", "who is", "where", "qualify"]
         if any(keyword in user_message.lower() for keyword in live_keywords):
             search_query = optimize_search_query(user_message)
-            print(f"Optimized Search Query: {search_query}")
             search_context = internet_search(search_query)
 
-    # System prompt jo AI ko smart banayega
     system_prompt = (
         "You are Mehta AI Assistant, a smart, accurate and helpful AI. "
         "Provide responses in the same language or script used by the user. "
@@ -82,7 +77,7 @@ def chat():
     if search_context:
         system_prompt += f"\n\n[CRITICAL LIVE INTERNET CONTEXT]:\n{search_context}"
 
-    # 👁️ Vision Payload Structure (OpenRouter Vision specification ke hisab se)
+    # 👁️ Vision Payload Structure
     user_content = []
     if user_message:
         user_content.append({"type": "text", "text": user_message})
@@ -95,7 +90,7 @@ def chat():
             }
         })
 
-    # 🎯 Model Selection: Agar image hai toh Gemini Vision use hoga, nahi toh DeepSeek Chat
+    # 🎯 Model Selection: Image ke liye Gemini Vision, normal ke liye DeepSeek
     selected_model = "google/gemini-2.5-flash" if image_base64 else "deepseek/deepseek-chat"
 
     headers = {
