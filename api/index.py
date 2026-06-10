@@ -44,46 +44,59 @@ def optimize_search_query(user_msg):
         res_data = res.json()
         raw_content = res_data['choices'][0]['message']['content'].strip()
         
-        # 🧼 Filter: Agar DeepSeek reasoning/thinking tags <think>...</think> bhejta hai, toh use hatayein
+        # 🧼 Filter: Agar DeepSeek reasoning/thinking tags bhejta hai
         clean_query = re.sub(r'<think>.*?</think>', '', raw_content, flags=re.DOTALL).strip()
-        
-        # Faltu ke quotes aur brackets saaf karna
         clean_query = clean_query.replace('"', '').replace("'", "").replace('{', '').replace('}', '')
         return clean_query if clean_query else user_msg
     except Exception as e:
         print(f"Optimization Error: {e}")
-        return user_msg  # Fallback agar AI fail ho jaye
+        return user_msg
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.json or {}
     user_message = data.get("message", "").strip()
+    image_base64 = data.get("image", None)  # 📸 Frontened se image data lena
     
-    if not user_message:
-        return jsonify({"error": "No message provided"}), 400
+    # Agar na text message hai aur na image, toh error dena
+    if not user_message and not image_base64:
+        return jsonify({"error": "No message or image provided"}), 400
 
-    # 🧠 Super Smart Intent Detection (Har possible context keyword shamil hai)
-    live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai", "who is", "where", "qualify"]
     search_context = ""
     
-    if any(keyword in user_message.lower() for keyword in live_keywords):
-        # Ab chahe lowercase ho ya uppercase, AI khud best search term banayega
-        search_query = optimize_search_query(user_message)
-        print(f"Optimized Search Query: {search_query}")
-        search_context = internet_search(search_query)
+    # 🧠 Live search tabhi chalega jab sirf text pucha jaye (vision me iski zarurat nahi)
+    if user_message and not image_base64:
+        live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai", "who is", "where", "qualify"]
+        if any(keyword in user_message.lower() for keyword in live_keywords):
+            search_query = optimize_search_query(user_message)
+            print(f"Optimized Search Query: {search_query}")
+            search_context = internet_search(search_query)
 
-    # System prompt jo AI ko super smart aur accurate banayega
+    # System prompt jo AI ko smart banayega
     system_prompt = (
         "You are Mehta AI Assistant, a smart, accurate and helpful AI. "
-        "Provide responses in the same language or script used by the user (e.g., if asked in Hindi or Hinglish, reply accordingly). "
-        "If internet search context is provided below, analyze it critically. "
-        "Strictly avoid mixing information of different people with the same name. "
-        "Cross-check if the person's identity exactly matches the user's specific context "
-        "before answering. If data is conflicting or not found, state the facts clearly without guessing."
+        "Provide responses in the same language or script used by the user. "
+        "If an image is provided, analyze it thoroughly and answer the user's question about it accurately."
     )
     
     if search_context:
         system_prompt += f"\n\n[CRITICAL LIVE INTERNET CONTEXT]:\n{search_context}"
+
+    # 👁️ Vision Payload Structure (OpenRouter Vision specification ke hisab se)
+    user_content = []
+    if user_message:
+        user_content.append({"type": "text", "text": user_message})
+    
+    if image_base64:
+        user_content.append({
+            "type": "image_url",
+            "image_url": {
+                "url": f"data:image/jpeg;base64,{image_base64}"
+            }
+        })
+
+    # 🎯 Model Selection: Agar image hai toh Gemini Vision use hoga, nahi toh DeepSeek Chat
+    selected_model = "google/gemini-2.5-flash" if image_base64 else "deepseek/deepseek-chat"
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -91,10 +104,10 @@ def chat():
     }
     
     payload = {
-        "model": "deepseek/deepseek-chat",
+        "model": selected_model,
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message}
+            {"role": "user", "content": user_content}
         ]
     }
     
