@@ -1,3 +1,4 @@
 flask
 flask-cors
 requests
+duckduckgo_search
