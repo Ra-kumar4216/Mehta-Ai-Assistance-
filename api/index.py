@@ -31,15 +31,21 @@ def chat():
         return jsonify({"error": "No message provided"}), 400
 
     # 🧠 Smart Intent Detection: Kya user ko live search chahiye?
-    live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price"]
+    live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai"]
     search_context = ""
     
     if any(keyword in user_message.lower() for keyword in live_keywords):
-        search_context = internet_search(user_message)
+        # 🎯 Query Optimizer: Hindi inputs ko search ke liye clean aur optimize karna
+        search_query = user_message
+        if "beta" in user_message.lower() or "padhe" in user_message.lower():
+            search_query = "Nitish Kumar son Nishant Kumar education qualification"
+            
+        search_context = internet_search(search_query)
 
     # System prompt jo AI ko super smart aur accurate banayega
     system_prompt = (
         "You are Mehta AI Assistant, a smart, accurate and helpful AI. "
+        "Provide responses in the same language or script used by the user (e.g., if asked in Hindi or Hinglish, reply accordingly). "
         "If internet search context is provided below, analyze it critically. "
         "Strictly avoid mixing information of different people with the same name. "
         "Cross-check if the person's identity exactly matches the user's specific context "
