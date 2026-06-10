@@ -22,6 +22,26 @@ def internet_search(query):
         print(f"Search Error: {e}")
     return "No live internet data found."
 
+# 🎯 AI Query Optimizer Function: Yeh har tarah ke ulte-seedhe sawal ko perfect search term banayega
+def optimize_search_query(user_msg):
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    # AI ko bolna ki search ke liye sirf keywords nikal ke de
+    payload = {
+        "model": "deepseek/deepseek-chat",
+        "messages": [
+            {"role": "system", "content": "You are a search query optimizer. Convert the user's input (regardless of letter casing, typos, or language like Hindi/Hinglish) into a single, clean English search engine query focused on fetching factual data. Respond ONLY with the optimized search string, nothing else."},
+            {"role": "user", "content": user_msg}
+        ]
+    }
+    try:
+        res = requests.post(OPENROUTER_URL, headers=headers, json=payload)
+        return res.json()['choices'][0]['message']['content'].strip().replace('"', '')
+    except:
+        return user_msg  # Fallback agar AI fail ho jaye
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.json or {}
@@ -30,16 +50,14 @@ def chat():
     if not user_message:
         return jsonify({"error": "No message provided"}), 400
 
-    # 🧠 Smart Intent Detection: Kya user ko live search chahiye?
-    live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai"]
+    # 🧠 Super Smart Intent Detection
+    live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai", "who is", "where"]
     search_context = ""
     
-  if any(keyword in user_message.lower() for keyword in live_keywords):
-        # 🎯 Query Optimizer: Agar Nitish ya Nishant ke baare me pucha jaye, toh automatic sahi search term banana
-        search_query = user_message
-        if "nishant" in user_message.lower() or "nitish" in user_message.lower():
-            search_query = "Nitish Kumar son Nishant Kumar education"
-            
+    if any(keyword in user_message.lower() for keyword in live_keywords):
+        # Ab chahe lowercase ho ya uppercase, AI khud best search term banayega
+        search_query = optimize_search_query(user_message)
+        print(f"Optimized Search Query: {search_query}")
         search_context = internet_search(search_query)
 
     # System prompt jo AI ko super smart aur accurate banayega
@@ -49,7 +67,7 @@ def chat():
         "If internet search context is provided below, analyze it critically. "
         "Strictly avoid mixing information of different people with the same name. "
         "Cross-check if the person's identity exactly matches the user's specific context "
-        "before answering. If data is conflicting, state the facts clearly without guessing."
+        "before answering. If data is conflicting or not found, state the facts clearly without guessing."
     )
     
     if search_context:
