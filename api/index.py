@@ -68,43 +68,54 @@ def chat():
             search_query = optimize_search_query(user_message)
             search_context = internet_search(search_query)
 
-    system_prompt = (
+    # 🎯 Base Instructions for the AI
+    base_instruction = (
         "You are Mehta AI Assistant, a smart, accurate and helpful AI. "
         "Provide responses in the same language or script used by the user. "
         "If an image is provided, analyze it thoroughly and answer the user's question about it accurately."
     )
     
     if search_context:
-        system_prompt += f"\n\n[CRITICAL LIVE INTERNET CONTEXT]:\n{search_context}"
-
-    # 👁️ Vision Payload Structure
-    user_content = []
-    if user_message:
-        user_content.append({"type": "text", "text": user_message})
-    
-    if image_base64:
-        user_content.append({
-            "type": "image_url",
-            "image_url": {
-                "url": f"data:image/jpeg;base64,{image_base64}"
-            }
-        })
-
-    # 🎯 Model Selection: Image ke liye Gemini Vision, normal ke liye DeepSeek
-    selected_model = "google/gemini-2.5-flash:free" if image_base64 else "deepseek/deepseek-chat"
+        base_instruction += f"\n\n[CRITICAL LIVE INTERNET CONTEXT]:\n{search_context}"
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
-    
-    payload = {
-        "model": selected_model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content}
-        ]
-    }
+
+    # 🎯 Image aur Normal Text cases ke liye alag Payload Structure
+    if image_base64:
+        # 📸 IMAGE VALUE CASE: System prompt role hatakar user content me inject kiya (Saves from OpenRouter Error)
+        selected_model = "google/gemini-2.5-flash:free"
+        prompt_text = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
+        
+        payload = {
+            "model": selected_model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt_text},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{image_base64}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    else:
+        # 💬 NORMAL TEXT CASE: Standard DeepSeek structure
+        selected_model = "deepseek/deepseek-chat"
+        payload = {
+            "model": selected_model,
+            "messages": [
+                {"role": "system", "content": base_instruction},
+                {"role": "user", "content": user_message}
+            ]
+        }
     
     try:
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload)
