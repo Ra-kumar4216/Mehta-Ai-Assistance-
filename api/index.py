@@ -64,7 +64,7 @@ def chat():
             search_query = optimize_search_query(user_message)
             search_context = internet_search(search_query)
 
-    # 🎯 AI Settings
+    # 🎯 Instructions
     base_instruction = "You are Mehta AI Assistant, a smart, accurate and helpful AI. Provide responses in the same language or script used by the user."
     if search_context:
         base_instruction += f"\n\n[CRITICAL LIVE INTERNET CONTEXT]:\n{search_context}"
@@ -76,9 +76,11 @@ def chat():
 
     # 👁️ Payload Structure Selection (Saves from OpenRouter Error)
     if image_base64:
-        # 📸 IMAGE CASE: System prompt ko direct user message me merge kiya hai
+        # 📸 IMAGE CASE: System prompt role hatakar user array me clean tarike se dal diya hai
         selected_model = "google/gemini-2.5-flash:free"
-        prompt_text = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
+        
+        # Sawaal aur instruction ko ek sath mila diya
+        final_text_prompt = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
         
         payload = {
             "model": selected_model,
@@ -86,7 +88,10 @@ def chat():
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": prompt_text},
+                        {
+                            "type": "text", 
+                            "text": final_text_prompt
+                        },
                         {
                             "type": "image_url",
                             "image_url": {
@@ -98,7 +103,7 @@ def chat():
             ]
         }
     else:
-        # 💬 NORMAL TEXT CASE
+        # 💬 NORMAL TEXT CASE (DeepSeek)
         selected_model = "deepseek/deepseek-chat"
         payload = {
             "model": selected_model,
@@ -111,10 +116,12 @@ def chat():
     try:
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload)
         res_data = response.json()
-        if 'choices' in res_data:
+        
+        if 'choices' in res_data and len(res_data['choices']) > 0:
             reply = res_data['choices'][0]['message']['content']
             return jsonify({"reply": reply})
         else:
+            # Pura Error details frontend ko pass karna debug karne ke liye
             return jsonify({"error": "Unexpected response structure from OpenRouter", "details": res_data}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
