@@ -23,7 +23,7 @@ def internet_search(query):
         print(f"Search Error: {e}")
     return "No live internet data found."
 
-# 🎯 AI Query Optimizer Function: Yeh har tarah ke sawal ko perfect search term banayega
+# 🎯 AI Query Optimizer Function
 def optimize_search_query(user_msg):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -34,7 +34,7 @@ def optimize_search_query(user_msg):
         "messages": [
             {
                 "role": "system", 
-                "content": "You are a precise search query optimizer. Convert the user's input (regardless of letter casing, typos, or language like Hindi/Hinglish) into a single, clean English search engine query focused on fetching factual data. Respond ONLY with the plain text search keywords. Never use markdown, never wrap in JSON, and do not include any conversational filler."
+                "content": "You are a precise search query optimizer. Convert the user's input into a single, clean English search engine query. Respond ONLY with plain text keywords."
             },
             {"role": "user", "content": user_msg}
         ]
@@ -43,38 +43,29 @@ def optimize_search_query(user_msg):
         res = requests.post(OPENROUTER_URL, headers=headers, json=payload)
         res_data = res.json()
         raw_content = res_data['choices'][0]['message']['content'].strip()
-        
         clean_query = re.sub(r'<think>.*?</think>', '', raw_content, flags=re.DOTALL).strip()
-        clean_query = clean_query.replace('"', '').replace("'", "").replace('{', '').replace('}', '')
-        return clean_query if clean_query else user_msg
-    except Exception as e:
-        print(f"Optimization Error: {e}")
+        return clean_query.replace('"', '').replace("'", "")
+    except:
         return user_msg
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.json or {}
     user_message = data.get("message", "").strip()
-    image_base64 = data.get("image", None)  # 📸 Frontened se image data lena
+    image_base64 = data.get("image", None)  # 📸 Frontend se image lena
     
     if not user_message and not image_base64:
         return jsonify({"error": "No message or image provided"}), 400
 
     search_context = ""
-    
     if user_message and not image_base64:
-        live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai", "who is", "where", "qualify"]
+        live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai", "who is", "where"]
         if any(keyword in user_message.lower() for keyword in live_keywords):
             search_query = optimize_search_query(user_message)
             search_context = internet_search(search_query)
 
-    # 🎯 Base Instructions for the AI
-    base_instruction = (
-        "You are Mehta AI Assistant, a smart, accurate and helpful AI. "
-        "Provide responses in the same language or script used by the user. "
-        "If an image is provided, analyze it thoroughly and answer the user's question about it accurately."
-    )
-    
+    # 🎯 Instructions
+    base_instruction = "You are Mehta AI Assistant, a smart, accurate and helpful AI. Provide responses in the same language or script used by the user."
     if search_context:
         base_instruction += f"\n\n[CRITICAL LIVE INTERNET CONTEXT]:\n{search_context}"
 
@@ -83,10 +74,10 @@ def chat():
         "Content-Type": "application/json"
     }
 
-    # 🎯 Image aur Normal Text cases ke liye alag Payload Structure
+    # 👁️ Payload Structure Selection
     if image_base64:
-        # 📸 IMAGE VALUE CASE: System prompt role hatakar user content me inject kiya (Saves from OpenRouter Error)
-        selected_model = "meta-llama/llama-3.2-11b-vision-instruct:free"
+        # 📸 IMAGE CASE: No system prompt role (Saves from OpenRouter Error)
+        selected_model = "google/gemini-2.5-flash:free"
         prompt_text = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
         
         payload = {
@@ -107,7 +98,7 @@ def chat():
             ]
         }
     else:
-        # 💬 NORMAL TEXT CASE: Standard DeepSeek structure
+        # 💬 NORMAL TEXT CASE
         selected_model = "deepseek/deepseek-chat"
         payload = {
             "model": selected_model,
@@ -120,12 +111,10 @@ def chat():
     try:
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload)
         res_data = response.json()
-        
         if 'choices' in res_data:
             reply = res_data['choices'][0]['message']['content']
             return jsonify({"reply": reply})
         else:
             return jsonify({"error": "Unexpected response structure from OpenRouter", "details": res_data}), 500
-            
     except Exception as e:
         return jsonify({"error": str(e)}), 500
