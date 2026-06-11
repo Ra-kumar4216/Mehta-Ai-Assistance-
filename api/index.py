@@ -86,7 +86,7 @@ def chat():
     # 🎯 Image aur Normal Text cases ke liye alag Payload Structure
     if image_base64:
         # 📸 IMAGE VALUE CASE: System prompt role hatakar user content me inject kiya (Saves from OpenRouter Error)
-        selected_model = "google/gemini-2.5-flash:free"
+        selected_model = "meta-llama/llama-3.2-11b-vision-instruct:free"
         prompt_text = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
         
         payload = {
