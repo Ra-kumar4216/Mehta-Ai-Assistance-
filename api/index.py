@@ -77,7 +77,7 @@ def chat():
     # 👁️ Payload Structure Selection (Saves from OpenRouter Error)
     if image_base64:
         # 📸 IMAGE CASE: System prompt role hatakar user array me clean tarike se dal diya hai
-        selected_model = "google/gemini-2.5-flash:free"
+        selected_model = "meta-llama/llama-3.2-11b-vision-instruct:free"
         
         # Sawaal aur instruction ko ek sath mila diya
         final_text_prompt = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
