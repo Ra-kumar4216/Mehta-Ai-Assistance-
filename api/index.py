@@ -74,13 +74,11 @@ def chat():
         "Content-Type": "application/json"
     }
 
-    # 👁️ Payload Structure Selection (Saves from OpenRouter Error)
+    # 👁️ OpenRouter Multi-modal / Vision Pattern Fix
     if image_base64:
-        # 📸 IMAGE CASE: System prompt role hatakar user array me clean tarike se dal diya hai
-        selected_model = "meta-llama/llama-3.2-11b-vision-instruct:free"
-        
-        # Sawaal aur instruction ko ek sath mila diya
-        final_text_prompt = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
+        # 📸 IMAGE CASE: Vision ke liye standard Google Gemini Flash model best aur hamesha live hai
+        selected_model = "google/gemini-2.5-flash:free"
+        prompt_text = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
         
         payload = {
             "model": selected_model,
@@ -90,7 +88,7 @@ def chat():
                     "content": [
                         {
                             "type": "text", 
-                            "text": final_text_prompt
+                            "text": prompt_text
                         },
                         {
                             "type": "image_url",
@@ -117,11 +115,15 @@ def chat():
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload)
         res_data = response.json()
         
+        # 🚨 SAFE PARSING: Agar OpenRouter API koi error bhejti hai toh server crash nahi hoga, screen par error dikhega
+        if 'error' in res_data:
+            return jsonify({"reply": f"OpenRouter Error: {res_data['error'].get('message', 'Unknown Error')}"})
+            
         if 'choices' in res_data and len(res_data['choices']) > 0:
             reply = res_data['choices'][0]['message']['content']
             return jsonify({"reply": reply})
         else:
-            # Pura Error details frontend ko pass karna debug karne ke liye
-            return jsonify({"error": "Unexpected response structure from OpenRouter", "details": res_data}), 500
+            return jsonify({"reply": "Unexpected response structure from OpenRouter server. Please try again."})
+            
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"reply": f"Backend Error: {str(e)}"}), 500
