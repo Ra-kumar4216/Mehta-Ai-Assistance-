@@ -64,7 +64,7 @@ def chat():
             search_query = optimize_search_query(user_message)
             search_context = internet_search(search_query)
 
-    # 🎯 Instructions
+    # 🎯 AI Settings
     base_instruction = "You are Mehta AI Assistant, a smart, accurate and helpful AI. Provide responses in the same language or script used by the user."
     if search_context:
         base_instruction += f"\n\n[CRITICAL LIVE INTERNET CONTEXT]:\n{search_context}"
@@ -74,9 +74,9 @@ def chat():
         "Content-Type": "application/json"
     }
 
-    # 👁️ Payload Structure Selection
+    # 👁️ Payload Structure Selection (Saves from OpenRouter Error)
     if image_base64:
-        # 📸 IMAGE CASE: No system prompt role (Saves from OpenRouter Error)
+        # 📸 IMAGE CASE: System prompt ko direct user message me merge kiya hai
         selected_model = "google/gemini-2.5-flash:free"
         prompt_text = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
         
