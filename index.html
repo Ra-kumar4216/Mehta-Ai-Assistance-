@@ -9,7 +9,7 @@
         .chat-container { width: 450px; height: 600px; background: #1e1e1e; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.5); overflow: hidden; }
         .chat-header { background: #2563eb; padding: 15px; text-align: center; font-size: 1.2rem; font-weight: bold; }
         .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .message { max-width: 75%; padding: 10px 14px; border-radius: 8px; margin: 2px 0; line-height: 1.4; word-wrap: break-word; }
+        .message { max-width: 75%; padding: 10px 14px; border-radius: 8px; margin: 2px 0; line-height: 1.4; word-wrap: break-word; display: flex; flex-direction: column; }
         .user { background: #2563eb; align-self: flex-end; color: white; border-bottom-right-radius: 2px; }
         .bot { background: #333; align-self: flex-start; color: #f3f4f6; border-bottom-left-radius: 2px; }
         
@@ -30,7 +30,7 @@
         button.send-btn:hover { background: #1d4ed8; }
         
         /* Chat me image dikhane ke liye styling */
-        .chat-image { max-width: 100%; border-radius: 6px; margin-top: 5px; display: block; }
+        .chat-image { max-width: 100%; border-radius: 6px; margin-bottom: 6px; display: block; }
     </style>
 </head>
 <body>
@@ -95,16 +95,19 @@
         const userDiv = document.createElement("div");
         userDiv.className = "message user";
         
-        if (messageText) {
-            userDiv.innerText = messageText;
-        }
-        
-        // Agar user ne image select ki hai toh use chat box me dikhana
+        // 📸 1. PHOTO PEHLE AAYEGI (If Available)
         if (selectedBase64Image) {
             const imgElement = document.createElement("img");
             imgElement.src = `data:image/jpeg;base64,${selectedBase64Image}`;
             imgElement.className = "chat-image";
             userDiv.appendChild(imgElement);
+        }
+        
+        // 💬 2. SEWAL (TEXT) PHIR USKE THIK NEECHE AAYEGA
+        if (messageText) {
+            const textSpan = document.createElement("span");
+            textSpan.innerText = messageText;
+            userDiv.appendChild(textSpan);
         }
         
         chatBox.appendChild(userDiv);
@@ -123,7 +126,7 @@
         chatBox.scrollTop = chatBox.scrollHeight;
 
         try {
-            // Vercel Live API Call (Payload me message aur image dono ja rahe hain)
+            // Vercel Live API Call
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
