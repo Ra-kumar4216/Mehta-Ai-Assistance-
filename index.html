@@ -62,7 +62,7 @@
         }
 
         @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            0 { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
@@ -113,7 +113,7 @@
             color: #e2e8f0; 
             border-bottom-left-radius: 4px; 
             border: 1px solid rgba(255, 255, 255, 0.04);
-            padding-bottom: 44px; /* Extra space for action buttons */
+            padding-bottom: 50px; /* Space for action buttons */
         }
         
         .code-container {
@@ -154,13 +154,14 @@
             color: white;
         }
         
-        /* 🔘 Bottom Action Buttons Layout */
+        /* 🔘 Bottom Action Buttons Flex Layout */
         .bot-actions {
             position: absolute;
             bottom: 8px;
             right: 12px;
             display: flex;
             gap: 6px;
+            z-index: 10;
         }
         
         .copy-btn, .speak-btn {
@@ -168,7 +169,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #94a3b8;
             font-size: 0.75rem;
-            padding: 4px 8px;
+            padding: 5px 9px;
             border-radius: 6px;
             cursor: pointer;
             transition: 0.2s;
@@ -181,8 +182,9 @@
             color: #ffffff;
         }
         .speak-btn.playing {
-            background: #2563eb !important;
+            background: #ef4444 !important;
             color: white !important;
+            border-color: #ef4444;
         }
         
         .preview-container { 
@@ -269,7 +271,7 @@
 <div class="chat-container">
     <div class="chat-header">Mehta AI Assistant</div>
     <div class="chat-messages" id="chat-box">
-        <div class="message bot">
+        <div class="message bot" id="welcome-msg">
             Hello! I'm Mehta, your smart assistant. How can I help you today?
             <div class="bot-actions">
                 <button class="speak-btn" onclick="speakText(`Hello! I'm Mehta, your smart assistant. How can I help you today?`, this)">🔊 Speak</button>
@@ -296,7 +298,7 @@
     let selectedBase64Image = null;
     let recognition = null;
     let isRecording = false;
-    let currentUtterance = null; // Track current voice output
+    let currentUtterance = null;
 
     // 🎙️ Voice Recognition Setup
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -337,7 +339,6 @@
     // 🗣️ Voice Output (TTS) Function
     function speakText(text, button) {
         if ('speechSynthesis' in window) {
-            // Agar pehle se kuch bol raha hai toh stop karo
             if (window.speechSynthesis.speaking) {
                 window.speechSynthesis.cancel();
                 if (button.classList.contains('playing')) {
@@ -347,22 +348,14 @@
                 }
             }
 
-            // Clean markdown links and code blocks for crisp speech
             let cleanText = text.replace(/```[\s\S]*?```/g, '[Code block skipped]');
             cleanText = cleanText.replace(/\[([\s\S]*?)\]\([\s\S]*?\)/g, '$1'); 
             cleanText = cleanText.replace(/[#*`_\-]/g, '');
 
             currentUtterance = new SpeechSynthesisUtterance(cleanText);
-            
-            // Language configuration
-            if(/[अ-ँ]/.test(text)) {
-                currentUtterance.lang = 'hi-IN'; // Hindi voice
-            } else {
-                currentUtterance.lang = 'en-US'; // English voice
-            }
+            currentUtterance.lang = /[अ-ँ]/.test(text) ? 'hi-IN' : 'en-US';
 
             currentUtterance.onstart = function() {
-                // Remove playing class from all other speak buttons
                 document.querySelectorAll('.speak-btn').forEach(btn => {
                     btn.classList.remove('playing');
                     btn.innerHTML = "🔊 Speak";
@@ -378,7 +371,7 @@
 
             window.speechSynthesis.speak(currentUtterance);
         } else {
-            alert("Text-to-speech is not supported in this browser.");
+            alert("TTS not supported.");
         }
     }
 
@@ -421,8 +414,6 @@
         const messageText = inputField.value.trim();
         
         if (!messageText && !selectedBase64Image) return;
-
-        // Auto-stop any speech when sending new message
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
         const userDiv = document.createElement("div");
@@ -463,8 +454,7 @@
             const data = await response.json();
             const replyText = data.reply || data.error || "Something went wrong.";
             
-            let htmlContent = marked.parse(replyText);
-            botDiv.innerHTML = htmlContent;
+            botDiv.innerHTML = marked.parse(replyText);
             
             const preElements = botDiv.querySelectorAll("pre");
             preElements.forEach((pre) => {
@@ -481,18 +471,16 @@
                 wrapper.appendChild(codeBtn);
             });
             
-            // 🔘 Dynamic Actions Container Add karna
+            // 🔘 FIXED BOTH BUTTONS IN A FLEX BOX
             const actionsDiv = document.createElement("div");
             actionsDiv.className = "bot-actions";
             
-            // Speak Button
             const speakBtn = document.createElement("button");
             speakBtn.className = "speak-btn";
             speakBtn.innerHTML = "🔊 Speak";
             speakBtn.onclick = function() { speakText(replyText, speakBtn); };
             actionsDiv.appendChild(speakBtn);
             
-            // Copy Chat Button
             const copyBtn = document.createElement("button");
             copyBtn.className = "copy-btn";
             copyBtn.innerHTML = "Copy Whole Chat 📋";
