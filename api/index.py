@@ -76,8 +76,8 @@ def chat():
 
     # 👁️ OpenRouter Multi-modal / Vision Pattern Fix
     if image_base64:
-        # 📸 IMAGE CASE: Vision ke liye standard Google Gemini Flash model best aur hamesha live hai
-        selected_model = "google/gemini-2.5-flash:free"
+        # 📸 NEW FREE VISION MODEL: Google ka bilkul naya exp free model jo photo support karta hai
+        selected_model = "google/gemini-2.0-flash-exp:free"
         prompt_text = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
         
         payload = {
@@ -86,10 +86,7 @@ def chat():
                 {
                     "role": "user",
                     "content": [
-                        {
-                            "type": "text", 
-                            "text": prompt_text
-                        },
+                        {"type": "text", "text": prompt_text},
                         {
                             "type": "image_url",
                             "image_url": {
@@ -115,9 +112,10 @@ def chat():
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload)
         res_data = response.json()
         
-        # 🚨 SAFE PARSING: Agar OpenRouter API koi error bhejti hai toh server crash nahi hoga, screen par error dikhega
+        # 🚨 SAFE PARSING
         if 'error' in res_data:
-            return jsonify({"reply": f"OpenRouter Error: {res_data['error'].get('message', 'Unknown Error')}"})
+            error_msg = res_data['error'].get('message', 'Unknown OpenRouter Error')
+            return jsonify({"reply": f"OpenRouter Error: {error_msg}"})
             
         if 'choices' in res_data and len(res_data['choices']) > 0:
             reply = res_data['choices'][0]['message']['content']
