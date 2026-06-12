@@ -76,8 +76,8 @@ def chat():
 
     # 👁️ OpenRouter Multi-modal / Vision Pattern Fix
     if image_base64:
-        # 📸 NEW FREE VISION MODEL: Google ka bilkul naya exp free model jo photo support karta hai
-        selected_model = "google/gemini-2.0-flash-exp:free"
+        # 📸 NEW WORKING FREE VISION MODEL
+        selected_model = "meta-llama/llama-3.2-11b-vision-instruct:free"
         prompt_text = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
         
         payload = {
