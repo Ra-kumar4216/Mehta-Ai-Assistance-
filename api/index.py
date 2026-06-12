@@ -76,10 +76,8 @@ def chat():
 
     # 👁️ OpenRouter Multi-modal / Vision Pattern Fix
     if image_base64:
-        
-        # 📸 NEW WORKING FREE VISION MODEL (Phi-3.5)
-        selected_model = "microsoft/phi-3.5-vision-instruct:free"
-
+        # 📸 CORRECTED FREE VISION MODEL ID
+        selected_model = "microsoft/phi-3.5-vision-instruct"
         prompt_text = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
         
         payload = {
