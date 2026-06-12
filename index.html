@@ -50,7 +50,6 @@
             gap: 8px;
         }
 
-        /* Live Indicator Pulse */
         .chat-header::before {
             content: '';
             display: inline-block;
@@ -77,7 +76,6 @@
             gap: 14px; 
         }
 
-        /* Modern Custom Scrollbar */
         .chat-messages::-webkit-scrollbar { width: 6px; }
         .chat-messages::-webkit-scrollbar-track { background: transparent; }
         .chat-messages::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
@@ -115,17 +113,22 @@
             color: #e2e8f0; 
             border-bottom-left-radius: 4px; 
             border: 1px solid rgba(255, 255, 255, 0.04);
-            padding-bottom: 40px; /* Space for Copy button */
+            padding-bottom: 40px; 
         }
         
-        /* 💻 Code Box Styling inside Chat */
+        /* 💻 Code Box Wrapper & Styling */
+        .code-container {
+            position: relative;
+            margin: 10px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
         .bot pre {
             background: #0f172a !important;
-            padding: 12px;
-            border-radius: 8px;
+            padding: 35px 12px 12px 12px; /* Top padding space for code copy button */
             overflow-x: auto;
-            margin: 8px 0;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 0;
         }
         .bot code {
             font-family: 'Fira Code', 'Courier New', Courier, monospace;
@@ -133,7 +136,27 @@
             font-size: 0.85rem;
         }
         
-        /* 📋 Modern Copy Button Styling */
+        /* ⚡ Specific Code Copy Button */
+        .code-copy-btn {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #38bdf8;
+            font-size: 0.7rem;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+        .code-copy-btn:hover {
+            background: #2563eb;
+            color: white;
+        }
+        
+        /* 📋 Main Message Copy Button Styling */
         .copy-btn {
             position: absolute;
             bottom: 8px;
@@ -155,7 +178,6 @@
             color: #ffffff;
         }
         
-        /* 📸 Image Preview Area Styling */
         .preview-container { 
             display: none; 
             padding: 12px 20px; 
@@ -189,7 +211,6 @@
         }
         input[type="text"]:focus { outline: none; border-color: #2563eb; background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
         
-        /* 📎 Attachment Button Styling */
         .attach-btn { 
             background: rgba(255, 255, 255, 0.05); 
             border: 1px solid rgba(255, 255, 255, 0.08); 
@@ -270,16 +291,15 @@
     }
 
     function copyToClipboard(text, button) {
-        // Markdown tags clean karke plain text copy karne ke liye
-        const cleanText = text.replace(/```[a-z]*\n([\s\S]*?)\n```/g, '$1');
-        navigator.clipboard.writeText(cleanText).then(() => {
-            button.innerText = "Copied! ✓";
+        navigator.clipboard.writeText(text).then(() => {
+            button.innerText = button.classList.contains('code-copy-btn') ? "Copied! ✓" : "Copied! ✓";
+            const originalBg = button.style.background;
             button.style.background = "#10b981";
             button.style.color = "#ffffff";
             setTimeout(() => {
-                button.innerText = "Copy 📋";
-                button.style.background = "rgba(255, 255, 255, 0.08)";
-                button.style.color = "#94a3b8";
+                button.innerText = button.classList.contains('code-copy-btn') ? "Copy Code 📋" : "Copy 📋";
+                button.style.background = originalBg;
+                button.style.color = button.classList.contains('code-copy-btn') ? "#38bdf8" : "#94a3b8";
             }, 2000);
         }).catch(err => {
             console.error('Failed to copy text: ', err);
@@ -335,13 +355,33 @@
             const data = await response.json();
             const replyText = data.reply || data.error || "Something went wrong.";
             
-            // 🔥 MARKDOWN PARSING: Text ko rich HTML format me convert karega code blocks ke sath
-            botDiv.innerHTML = marked.parse(replyText);
+            // Markdown parsing
+            let htmlContent = marked.parse(replyText);
+            botDiv.innerHTML = htmlContent;
             
-            // 📋 Copy Button dynamically add karna
+            // 🔥 AUTOMATIC CODE BLOCK DETECTOR: Har code block (pre) ko wrapper div me daal kar alag se copy button jodega
+            const preElements = botDiv.querySelectorAll("pre");
+            preElements.forEach((pre) => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "code-container";
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(pre);
+                
+                const codeBtn = document.createElement("button");
+                codeBtn.className = "code-copy-btn";
+                codeBtn.innerText = "Copy Code 📋";
+                
+                const codeText = pre.querySelector("code") ? pre.querySelector("code").innerText : pre.innerText;
+                codeBtn.onclick = function() {
+                    copyToClipboard(codeText, codeBtn);
+                };
+                wrapper.appendChild(codeBtn);
+            });
+            
+            // 📋 Pure message ka main Copy Button add karna
             const copyBtn = document.createElement("button");
             copyBtn.className = "copy-btn";
-            copyBtn.innerHTML = "Copy 📋";
+            copyBtn.innerHTML = "Copy Whole Chat 📋";
             copyBtn.onclick = function() {
                 copyToClipboard(replyText, copyBtn);
             };
