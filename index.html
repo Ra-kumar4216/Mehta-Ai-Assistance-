@@ -113,7 +113,7 @@
             color: #e2e8f0; 
             border-bottom-left-radius: 4px; 
             border: 1px solid rgba(255, 255, 255, 0.04);
-            padding-bottom: 40px; 
+            padding-bottom: 44px; /* Extra space for action buttons */
         }
         
         .code-container {
@@ -154,10 +154,16 @@
             color: white;
         }
         
-        .copy-btn {
+        /* 🔘 Bottom Action Buttons Layout */
+        .bot-actions {
             position: absolute;
             bottom: 8px;
             right: 12px;
+            display: flex;
+            gap: 6px;
+        }
+        
+        .copy-btn, .speak-btn {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #94a3b8;
@@ -170,9 +176,13 @@
             align-items: center;
             gap: 4px;
         }
-        .copy-btn:hover {
+        .copy-btn:hover, .speak-btn:hover {
             background: rgba(255, 255, 255, 0.15);
             color: #ffffff;
+        }
+        .speak-btn.playing {
+            background: #2563eb !important;
+            color: white !important;
         }
         
         .preview-container { 
@@ -225,7 +235,6 @@
         }
         .attach-btn:hover, .mic-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; border-color: rgba(255, 255, 255, 0.2); }
         
-        /* 🎙️ Mic active State Styling */
         .mic-btn.recording {
             background: #ef4444 !important;
             color: white !important;
@@ -260,7 +269,12 @@
 <div class="chat-container">
     <div class="chat-header">Mehta AI Assistant</div>
     <div class="chat-messages" id="chat-box">
-        <div class="message bot">Hello! I'm Mehta, your smart assistant. How can I help you today?</div>
+        <div class="message bot">
+            Hello! I'm Mehta, your smart assistant. How can I help you today?
+            <div class="bot-actions">
+                <button class="speak-btn" onclick="speakText(`Hello! I'm Mehta, your smart assistant. How can I help you today?`, this)">🔊 Speak</button>
+            </div>
+        </div>
     </div>
     
     <div class="preview-container" id="preview-area">
@@ -272,9 +286,7 @@
     <div class="chat-input-area">
         <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="handleImageSelect()">
         <button class="attach-btn" onclick="document.getElementById('image-input').click()" title="Attach Image">📎</button>
-        
         <button class="mic-btn" id="mic-button" onclick="toggleVoiceInput()" title="Voice Input">🎙️</button>
-        
         <input type="text" id="user-input" placeholder="Type or speak message..." onkeypress="if(event.key === 'Enter') sendMessage()">
         <button class="send-btn" onclick="sendMessage()">Send</button>
     </div>
@@ -284,14 +296,15 @@
     let selectedBase64Image = null;
     let recognition = null;
     let isRecording = false;
+    let currentUtterance = null; // Track current voice output
 
-    // 🎙️ Voice Recognition Setup (Automatic Hindi + English support)
+    // 🎙️ Voice Recognition Setup
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
         recognition.continuous = false; 
         recognition.interimResults = false; 
-        recognition.lang = 'hi-IN'; // Default Hindi rakha hai jo English mix bhi samajhta hai
+        recognition.lang = 'hi-IN';
 
         recognition.onstart = function() {
             isRecording = true;
@@ -304,27 +317,15 @@
             document.getElementById("user-input").value = speechToText;
         };
 
-        recognition.onerror = function(event) {
-            console.error("Speech recognition error", event.error);
-            stopRecording();
-        };
-
-        recognition.onend = function() {
-            stopRecording();
-        };
+        recognition.onerror = function() { stopRecording(); };
+        recognition.onend = function() { stopRecording(); };
     } else {
         document.getElementById("mic-button").style.display = "none";
-        console.log("Speech recognition not supported in this browser.");
     }
 
     function toggleVoiceInput() {
         if (!recognition) return;
-        if (isRecording) {
-            recognition.stop();
-        } else {
-            document.getElementById("user-input").value = "";
-            recognition.start();
-        }
+        if (isRecording) { recognition.stop(); } else { document.getElementById("user-input").value = ""; recognition.start(); }
     }
 
     function stopRecording() {
@@ -333,10 +334,57 @@
         document.getElementById("user-input").placeholder = "Type or speak message...";
     }
 
+    // 🗣️ Voice Output (TTS) Function
+    function speakText(text, button) {
+        if ('speechSynthesis' in window) {
+            // Agar pehle se kuch bol raha hai toh stop karo
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                if (button.classList.contains('playing')) {
+                    button.classList.remove('playing');
+                    button.innerHTML = "🔊 Speak";
+                    return;
+                }
+            }
+
+            // Clean markdown links and code blocks for crisp speech
+            let cleanText = text.replace(/```[\s\S]*?```/g, '[Code block skipped]');
+            cleanText = cleanText.replace(/\[([\s\S]*?)\]\([\s\S]*?\)/g, '$1'); 
+            cleanText = cleanText.replace(/[#*`_\-]/g, '');
+
+            currentUtterance = new SpeechSynthesisUtterance(cleanText);
+            
+            // Language configuration
+            if(/[अ-ँ]/.test(text)) {
+                currentUtterance.lang = 'hi-IN'; // Hindi voice
+            } else {
+                currentUtterance.lang = 'en-US'; // English voice
+            }
+
+            currentUtterance.onstart = function() {
+                // Remove playing class from all other speak buttons
+                document.querySelectorAll('.speak-btn').forEach(btn => {
+                    btn.classList.remove('playing');
+                    btn.innerHTML = "🔊 Speak";
+                });
+                button.classList.add('playing');
+                button.innerHTML = "⏹️ Stop";
+            };
+
+            currentUtterance.onend = function() {
+                button.classList.remove('playing');
+                button.innerHTML = "🔊 Speak";
+            };
+
+            window.speechSynthesis.speak(currentUtterance);
+        } else {
+            alert("Text-to-speech is not supported in this browser.");
+        }
+    }
+
     function handleImageSelect() {
         const file = document.getElementById("image-input").files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function(e) {
             document.getElementById("img-preview").src = e.target.result;
@@ -364,8 +412,6 @@
                 button.style.background = originalBg;
                 button.style.color = button.classList.contains('code-copy-btn') ? "#38bdf8" : "#94a3b8";
             }, 2000);
-        }).catch(err => {
-            console.error('Failed to copy text: ', err);
         });
     }
 
@@ -376,6 +422,9 @@
         
         if (!messageText && !selectedBase64Image) return;
 
+        // Auto-stop any speech when sending new message
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
         const userDiv = document.createElement("div");
         userDiv.className = "message user";
         
@@ -385,7 +434,6 @@
             imgElement.className = "chat-image";
             userDiv.appendChild(imgElement);
         }
-        
         if (messageText) {
             const textSpan = document.createElement("span");
             textSpan.innerText = messageText;
@@ -409,10 +457,7 @@
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    message: messageText,
-                    image: imageToSend 
-                })
+                body: JSON.stringify({ message: messageText, image: imageToSend })
             });
             
             const data = await response.json();
@@ -431,21 +476,30 @@
                 const codeBtn = document.createElement("button");
                 codeBtn.className = "code-copy-btn";
                 codeBtn.innerText = "Copy Code 📋";
-                
                 const codeText = pre.querySelector("code") ? pre.querySelector("code").innerText : pre.innerText;
-                codeBtn.onclick = function() {
-                    copyToClipboard(codeText, codeBtn);
-                };
+                codeBtn.onclick = function() { copyToClipboard(codeText, codeBtn); };
                 wrapper.appendChild(codeBtn);
             });
             
+            // 🔘 Dynamic Actions Container Add karna
+            const actionsDiv = document.createElement("div");
+            actionsDiv.className = "bot-actions";
+            
+            // Speak Button
+            const speakBtn = document.createElement("button");
+            speakBtn.className = "speak-btn";
+            speakBtn.innerHTML = "🔊 Speak";
+            speakBtn.onclick = function() { speakText(replyText, speakBtn); };
+            actionsDiv.appendChild(speakBtn);
+            
+            // Copy Chat Button
             const copyBtn = document.createElement("button");
             copyBtn.className = "copy-btn";
             copyBtn.innerHTML = "Copy Whole Chat 📋";
-            copyBtn.onclick = function() {
-                copyToClipboard(replyText, copyBtn);
-            };
-            botDiv.appendChild(copyBtn);
+            copyBtn.onclick = function() { copyToClipboard(replyText, copyBtn); };
+            actionsDiv.appendChild(copyBtn);
+            
+            botDiv.appendChild(actionsDiv);
 
         } catch (error) {
             botDiv.innerText = "Error connecting to server.";
