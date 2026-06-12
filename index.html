@@ -225,7 +225,7 @@
         }
         .attach-btn:hover, .mic-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; border-color: rgba(255, 255, 255, 0.2); }
         
-        /* 🎙️ Mic active State Styling */
+        /* 🔥 Mic active State Styling */
         .mic-btn.recording {
             background: #ef4444 !important;
             color: white !important;
@@ -285,13 +285,13 @@
     let recognition = null;
     let isRecording = false;
 
-    // 🎙️ Voice Recognition Setup (Automatic Hindi + English support)
+    // 🎙️ Voice Recognition Setup
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
-        recognition.continuous = false; 
+        recognition.continuous = false; // Ek baar bolne par band ho jaye
         recognition.interimResults = false; 
-        recognition.lang = 'hi-IN'; // Default Hindi rakha hai jo English mix bhi samajhta hai
+        recognition.lang = window.navigator.language || 'en-US'; // Hindi/English automatic detect karega
 
         recognition.onstart = function() {
             isRecording = true;
