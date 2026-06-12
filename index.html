@@ -60,6 +60,7 @@
             overflow: hidden;
             box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.02);
             transition: transform 0.2s ease, box-shadow 0.3s ease;
+            position: relative;
         }
 
         .chat-container:hover {
@@ -424,7 +425,6 @@
         <div class="message bot">✨ Hello! I'm Mehta, your intelligent assistant. Ask me anything, share images, or use voice — I'm here to help.</div>
     </div>
 
-    <!-- attachment preview area -->
     <div class="preview-container" id="preview-area">
         <img src="" id="img-preview" class="preview-img" alt="preview">
         <span style="font-size: 0.85rem; color: #cbd5e1; flex:1;">Image ready</span>
@@ -446,46 +446,74 @@
     let selectedBase64Image = null;
     let recognition = null;
     let isRecording = false;
-    let currentAssistantReplyRaw = "";
 
-    // voice recognition init (hindi + english mix)
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-        recognition.lang = 'hi-IN';  // natural code-mixed support
-        recognition.onstart = () => {
-            isRecording = true;
+    // Robust Initialization Function for Speech Recognition
+    function initSpeechRecognition() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'hi-IN'; // Mix Hindi + English support
+
+            recognition.onstart = () => {
+                isRecording = true;
+                const micBtn = document.getElementById("mic-button");
+                if (micBtn) micBtn.classList.add("recording");
+                document.getElementById("user-input").placeholder = "🎙️ Listening...";
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById("user-input").value = transcript;
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error:", event.error);
+                stopRecording();
+            };
+
+            recognition.onend = () => {
+                stopRecording();
+            };
+            return true;
+        } else {
             const micBtn = document.getElementById("mic-button");
-            micBtn.classList.add("recording");
-            document.getElementById("user-input").placeholder = "🎙️ Listening...";
-        };
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            document.getElementById("user-input").value = transcript;
-        };
-        recognition.onerror = () => stopRecording();
-        recognition.onend = () => stopRecording();
-    } else {
-        const micBtn = document.getElementById("mic-button");
-        if (micBtn) micBtn.style.display = "none";
+            if (micBtn) micBtn.style.display = "none";
+            return false;
+        }
     }
+
+    // Run once on load
+    initSpeechRecognition();
 
     function stopRecording() {
         isRecording = false;
         const micBtn = document.getElementById("mic-button");
-        micBtn.classList.remove("recording");
+        if (micBtn) micBtn.classList.remove("recording");
         document.getElementById("user-input").placeholder = "Type or speak...";
     }
 
     function toggleVoiceInput() {
-        if (!recognition) return;
-        if (isRecording) {
-            recognition.stop();
-        } else {
-            document.getElementById("user-input").value = "";
-            recognition.start();
+        // If not initialized, try to initialize again
+        if (!recognition) {
+            const isSupported = initSpeechRecognition();
+            if (!isSupported) {
+                alert("आपका ब्राउज़र Voice Input सपोर्ट नहीं करता है। कृपया Chrome उपयोग करें।");
+                return;
+            }
+        }
+
+        try {
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                document.getElementById("user-input").value = "";
+                recognition.start();
+            }
+        } catch (err) {
+            console.error("Failed to toggle recognition:", err);
+            stopRecording();
         }
     }
 
@@ -530,23 +558,27 @@
         if (!chatBox) return;
         const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 120;
         if (!isNearBottom) {
-            scrollBtn.classList.add("show");
+            if (scrollBtn) scrollBtn.classList.add("show");
         } else {
-            scrollBtn.classList.remove("show");
+            if (scrollBtn) scrollBtn.classList.remove("show");
         }
     }
 
     function scrollChatToBottom() {
-        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
-        setTimeout(() => scrollBtn.classList.remove("show"), 200);
+        if (chatBox) chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        setTimeout(() => { if (scrollBtn) scrollBtn.classList.remove("show"); }, 200);
     }
 
-    chatBox.addEventListener("scroll", checkScrollVisibility);
+    if (chatBox) chatBox.addEventListener("scroll", checkScrollVisibility);
 
     // markdown rendering with code copy improvements
     function renderMarkdownWithActions(replyText, botDivElement) {
-        const htmlContent = marked.parse(replyText);
-        botDivElement.innerHTML = htmlContent;
+        if (typeof marked !== 'undefined' && marked.parse) {
+            botDivElement.innerHTML = marked.parse(replyText);
+        } else {
+            botDivElement.innerText = replyText;
+        }
+        
         // add code copy buttons
         const codeBlocks = botDivElement.querySelectorAll("pre");
         codeBlocks.forEach(pre => {
@@ -564,6 +596,7 @@
             };
             wrapper.appendChild(copyCodeBtn);
         });
+        
         // add global copy chat button
         const actionsDiv = document.createElement("div");
         actionsDiv.className = "bot-actions";
@@ -575,7 +608,7 @@
         botDivElement.appendChild(actionsDiv);
     }
 
-    // simulate or call real api (connect to /api/chat, but also provide demo fallback)
+    // simulate or call real api
     async function sendMessage() {
         const inputField = document.getElementById("user-input");
         const messageText = inputField.value.trim();
@@ -598,11 +631,11 @@
         }
         chatBox.appendChild(userDiv);
         inputField.value = "";
+        
         // preserve image for request then clear preview
         const imagePayload = selectedBase64Image;
         clearImage();
-        chatBox.scrollTop = chatBox.scrollHeight;
-        checkScrollVisibility();
+        scrollChatToBottom();
 
         // Bot "thinking"
         const botDiv = document.createElement("div");
@@ -612,10 +645,9 @@
         thinkingSpan.innerText = "Mehta is thinking";
         botDiv.appendChild(thinkingSpan);
         chatBox.appendChild(botDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
+        scrollChatToBottom();
 
         try {
-            // API endpoint (preserve original behavior)
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -626,33 +658,29 @@
             botDiv.innerHTML = ""; // clear thinking indicator
             renderMarkdownWithActions(replyText, botDiv);
         } catch (error) {
-            // graceful fallback demo response (for design showcase, because api may be missing)
             console.warn("API error, using smart fallback response", error);
-            let fallbackReply = "✨ I'm Mehta, your AI companion. I can answer questions, explain code, or help brainstorm. (API endpoint not reached – but design & animations fully working!)";
+            let fallbackReply = "✨ I'm Mehta, your AI companion. I can answer questions, explain code, or help brainstorm.";
             if (messageText.toLowerCase().includes("hello") || messageText.toLowerCase().includes("hi")) {
                 fallbackReply = "👋 Hello! I'm delighted to assist you. Feel free to ask me anything, attach an image, or even dictate using 🎙️.";
             } else if (imagePayload) {
-                fallbackReply = "🖼️ Thanks for sharing the image! I'd process it via vision models. In this demo, imagine me describing it brilliantly. Upload and let's discuss!";
+                fallbackReply = "🖼️ Thanks for sharing the image! I'd process it via vision models. In this demo, imagine me describing it brilliantly.";
             } else if (messageText) {
-                fallbackReply = `📌 You asked: "${messageText.substring(0, 80)}". As Mehta AI, I can help with tech, writing, coding tips, and more. Try asking for a code snippet or creative idea!`;
+                fallbackReply = `📌 You asked: "${messageText.substring(0, 80)}". As Mehta AI, I can help with tech, writing, coding tips, and more.`;
             }
             botDiv.innerHTML = "";
             renderMarkdownWithActions(fallbackReply, botDiv);
         }
-        chatBox.scrollTop = chatBox.scrollHeight;
-        checkScrollVisibility();
+        scrollChatToBottom();
     }
 
-    // optional attach scroll check after any new message
+    // Mutation observer to maintain clean auto scroll
     const observer = new MutationObserver(() => {
-        chatBox.scrollTop = chatBox.scrollHeight;
-        checkScrollVisibility();
+        scrollChatToBottom();
     });
-    observer.observe(chatBox, { childList: true, subtree: true });
-    // initial scroll to bottom after welcome
+    if (chatBox) observer.observe(chatBox, { childList: true, subtree: true });
+
     window.onload = () => {
-        chatBox.scrollTop = chatBox.scrollHeight;
-        checkScrollVisibility();
+        scrollChatToBottom();
     };
 </script>
 </body>
