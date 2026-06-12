@@ -116,7 +116,6 @@
             padding-bottom: 40px; 
         }
         
-        /* 💻 Code Box Wrapper & Styling */
         .code-container {
             position: relative;
             margin: 10px 0;
@@ -126,7 +125,7 @@
         }
         .bot pre {
             background: #0f172a !important;
-            padding: 35px 12px 12px 12px; /* Top padding space for code copy button */
+            padding: 35px 12px 12px 12px; 
             overflow-x: auto;
             margin: 0;
         }
@@ -136,7 +135,6 @@
             font-size: 0.85rem;
         }
         
-        /* ⚡ Specific Code Copy Button */
         .code-copy-btn {
             position: absolute;
             top: 6px;
@@ -156,7 +154,6 @@
             color: white;
         }
         
-        /* 📋 Main Message Copy Button Styling */
         .copy-btn {
             position: absolute;
             bottom: 8px;
@@ -194,7 +191,7 @@
             display: flex; 
             padding: 16px 20px; 
             background: rgba(15, 23, 42, 0.4); 
-            gap: 12px; 
+            gap: 8px; 
             align-items: center; 
             border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
@@ -211,7 +208,7 @@
         }
         input[type="text"]:focus { outline: none; border-color: #2563eb; background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
         
-        .attach-btn { 
+        .attach-btn, .mic-btn { 
             background: rgba(255, 255, 255, 0.05); 
             border: 1px solid rgba(255, 255, 255, 0.08); 
             color: #94a3b8; 
@@ -223,9 +220,24 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            width: 45px;
+            height: 45px;
         }
-        .attach-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; border-color: rgba(255, 255, 255, 0.2); }
+        .attach-btn:hover, .mic-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; border-color: rgba(255, 255, 255, 0.2); }
         
+        /* 🎙️ Mic active State Styling */
+        .mic-btn.recording {
+            background: #ef4444 !important;
+            color: white !important;
+            border-color: #ef4444 !important;
+            animation: micPulse 1.2s infinite;
+        }
+        @keyframes micPulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
         button.send-btn { 
             background: #2563eb; 
             border: none; 
@@ -239,7 +251,6 @@
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
         }
         button.send-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3); }
-        button.send-btn:active { transform: translateY(0); }
         
         .chat-image { max-width: 100%; border-radius: 10px; margin-bottom: 8px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     </style>
@@ -260,15 +271,67 @@
 
     <div class="chat-input-area">
         <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="handleImageSelect()">
-        <button class="attach-btn" onclick="document.getElementById('image-input').click()">📎</button>
+        <button class="attach-btn" onclick="document.getElementById('image-input').click()" title="Attach Image">📎</button>
         
-        <input type="text" id="user-input" placeholder="Type message or attach image..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button class="mic-btn" id="mic-button" onclick="toggleVoiceInput()" title="Voice Input">🎙️</button>
+        
+        <input type="text" id="user-input" placeholder="Type or speak message..." onkeypress="if(event.key === 'Enter') sendMessage()">
         <button class="send-btn" onclick="sendMessage()">Send</button>
     </div>
 </div>
 
 <script>
     let selectedBase64Image = null;
+    let recognition = null;
+    let isRecording = false;
+
+    // 🎙️ Voice Recognition Setup (Automatic Hindi + English support)
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false; 
+        recognition.interimResults = false; 
+        recognition.lang = 'hi-IN'; // Default Hindi rakha hai jo English mix bhi samajhta hai
+
+        recognition.onstart = function() {
+            isRecording = true;
+            document.getElementById("mic-button").classList.add("recording");
+            document.getElementById("user-input").placeholder = "Listening...";
+        };
+
+        recognition.onresult = function(event) {
+            const speechToText = event.results[0][0].transcript;
+            document.getElementById("user-input").value = speechToText;
+        };
+
+        recognition.onerror = function(event) {
+            console.error("Speech recognition error", event.error);
+            stopRecording();
+        };
+
+        recognition.onend = function() {
+            stopRecording();
+        };
+    } else {
+        document.getElementById("mic-button").style.display = "none";
+        console.log("Speech recognition not supported in this browser.");
+    }
+
+    function toggleVoiceInput() {
+        if (!recognition) return;
+        if (isRecording) {
+            recognition.stop();
+        } else {
+            document.getElementById("user-input").value = "";
+            recognition.start();
+        }
+    }
+
+    function stopRecording() {
+        isRecording = false;
+        document.getElementById("mic-button").classList.remove("recording");
+        document.getElementById("user-input").placeholder = "Type or speak message...";
+    }
 
     function handleImageSelect() {
         const file = document.getElementById("image-input").files[0];
@@ -292,12 +355,12 @@
 
     function copyToClipboard(text, button) {
         navigator.clipboard.writeText(text).then(() => {
-            button.innerText = button.classList.contains('code-copy-btn') ? "Copied! ✓" : "Copied! ✓";
+            button.innerText = "Copied! ✓";
             const originalBg = button.style.background;
             button.style.background = "#10b981";
             button.style.color = "#ffffff";
             setTimeout(() => {
-                button.innerText = button.classList.contains('code-copy-btn') ? "Copy Code 📋" : "Copy 📋";
+                button.innerText = button.classList.contains('code-copy-btn') ? "Copy Code 📋" : "Copy Whole Chat 📋";
                 button.style.background = originalBg;
                 button.style.color = button.classList.contains('code-copy-btn') ? "#38bdf8" : "#94a3b8";
             }, 2000);
@@ -355,11 +418,9 @@
             const data = await response.json();
             const replyText = data.reply || data.error || "Something went wrong.";
             
-            // Markdown parsing
             let htmlContent = marked.parse(replyText);
             botDiv.innerHTML = htmlContent;
             
-            // 🔥 AUTOMATIC CODE BLOCK DETECTOR: Har code block (pre) ko wrapper div me daal kar alag se copy button jodega
             const preElements = botDiv.querySelectorAll("pre");
             preElements.forEach((pre) => {
                 const wrapper = document.createElement("div");
@@ -378,7 +439,6 @@
                 wrapper.appendChild(codeBtn);
             });
             
-            // 📋 Pure message ka main Copy Button add karna
             const copyBtn = document.createElement("button");
             copyBtn.className = "copy-btn";
             copyBtn.innerHTML = "Copy Whole Chat 📋";
