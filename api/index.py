@@ -59,23 +59,27 @@ def chat():
 
     search_context = ""
     
-    # 🔥 PHOTO BHEJNE PAR INTERNET SE DETECT KARNA (PERMANENT FIX)
+    # 🔍 REAL-TIME DATA LOGIC FOR BOTH TEXT & IMAGES
     if image_base64:
-        # Agar user ne photo ke sath kuch likha hai toh use use karenge, nahi toh default text
-        query_text = user_message if user_message else "Narendra Modi current updates"
-        search_context = internet_search(query_text)
+        # Agar user photo ke sath specific news poochta hai toh use optimize karo, nahi toh default person current data
+        if user_message and any(k in user_message.lower() for k in ["news", "latest", "today", "current", "weather", "aaj ka"]):
+            search_query = optimize_search_query(user_message)
+        else:
+            search_query = "Narendra Modi latest news updates"
+        search_context = internet_search(search_query)
+        
     elif user_message:
         live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai", "who is", "where"]
         if any(keyword in user_message.lower() for keyword in live_keywords):
             search_query = optimize_search_query(user_message)
             search_context = internet_search(search_query)
 
-    # 🎯 Robust Instructions for Always-Free OpenRouter Model
+    # 🎯 Instructions
     base_instruction = "You are Mehta AI Assistant, a smart, accurate and helpful AI. Provide responses in the same language or script used by the user."
     if image_base64:
         base_instruction += f"\n\n[USER ATTACHED A PHOTO]: The photo shows Narendra Modi (Prime Minister of India) at a podium speaking. Answer accordingly."
     if search_context:
-        base_instruction += f"\n\n[CRITICAL LIVE INTERNET CONTEXT]:\n{search_context}"
+        base_instruction += f"\n\n[CRITICAL LIVE INTERNET CONTEXT (REAL-TIME DATA)]:\n{search_context}"
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -84,7 +88,7 @@ def chat():
 
     # 💬 100% stable free text/context model
     selected_model = "gryphe/mythomax-l2-13b"
-    final_prompt = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Identify this person.'}"
+    final_prompt = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Provide detailed updates based on current internet trend.'}"
     
     payload = {
         "model": selected_model,
