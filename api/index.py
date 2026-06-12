@@ -23,7 +23,7 @@ def internet_search(query):
         print(f"Search Error: {e}")
     return "No live internet data found."
 
-# 🎯 AI Query Optimizer Function (Sawal ko Google Search friendly banane ke liye)
+# 🎯 AI Query Optimizer Function
 def optimize_search_query(user_msg):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -43,7 +43,8 @@ def optimize_search_query(user_msg):
         res = requests.post(OPENROUTER_URL, headers=headers, json=payload)
         res_data = res.json()
         raw_content = res_data['choices'][0]['message']['content'].strip()
-        clean_query = re.sub(r'<think>.*?</think>', '', raw_content, flags=re.DOTALL).strip()
+        # Robust deepseek thinking tags cleaner
+        clean_query = re.sub(r'<think>[\s\S]*?</think>', '', raw_content).strip()
         return clean_query.replace('"', '').replace("'", "")
     except:
         return user_msg
@@ -57,25 +58,24 @@ def chat():
     if not user_message and not image_base64:
         return jsonify({"error": "No message or image provided"}), 400
 
-    # 🚀 FORCED LIVE BROWSING: Ab koi if-else keyword conditions nahi!
-    # Chahe tum Hindi me likho ya English me, AI compulsory pehle internet check karega.
+    # 🚀 ALWAYS BROWSE THE INTERNET DIRECTLY
     if user_message:
         search_query = optimize_search_query(user_message)
     else:
         search_query = "Narendra Modi latest news current updates"
         
-    # Live internet data nikalna
     search_context = internet_search(search_query)
 
     # 🎯 System Instructions with strict 2026 Data Enforcement
     base_instruction = (
         "You are Mehta AI Assistant, a smart, 100% accurate, and highly updated AI. "
-        "The current year is 2026. You must strictly ignore your pre-2026 training data and ONLY rely on the provided real-time internet context to answer the user. "
+        "The current year is 2026. You must strictly ignore your pre-2026 knowledge or training and ONLY rely on the provided live search data. "
+        "For example, as of April 15, 2026, Samrat Choudhary is the new Chief Minister of Bihar. Always prioritize the newest live facts provided in the context. "
         "Provide responses beautifully formatted in the same language or script used by the user."
     )
     
     if image_base64:
-        base_instruction += f"\n\n[IMAGE CONTEXT]: The user has uploaded a photo of Narendra Modi (Prime Minister of India) speaking at a public event."
+        base_instruction += f"\n\n[IMAGE CONTEXT]: The user has uploaded a photo."
     
     if search_context and "No live internet data found" not in search_context:
         base_instruction += f"\n\n[CRITICAL REAL-TIME LIVE INTERNET DATA (YEAR 2026)]:\n{search_context}"
@@ -85,7 +85,7 @@ def chat():
         "Content-Type": "application/json"
     }
 
-    # 🔥 DEEPSEEK SET FOR ULTIMATE COGNITIVE RESPONSES
+    # 🔥 DEEPSEEK SET FOR PRIMARY RESPONSE
     selected_model = "deepseek/deepseek-chat"
     final_prompt = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze the current context and provide a summary.'}"
     
@@ -106,7 +106,8 @@ def chat():
             
         if 'choices' in res_data and len(res_data['choices']) > 0:
             reply = res_data['choices'][0]['message']['content']
-            clean_reply = re.sub(r'<think>.*?</think>', '', reply, flags=re.DOTALL).strip()
+            # Secure cleaning of thought tags
+            clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', reply).strip()
             return jsonify({"reply": clean_reply})
         else:
             return jsonify({"reply": "Unexpected response structure from OpenRouter server. Please try again."})
