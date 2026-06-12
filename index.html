@@ -470,6 +470,9 @@
 
             recognition.onerror = (event) => {
                 console.error("Speech recognition error:", event.error);
+                if (event.error === 'not-allowed') {
+                    alert("⚠️ माइक प्रमिशन ब्लॉक है!\n\nइसे चालू करने के लिए:\n1. ऊपर URL बार में ताला (🔒) आइकॉन पर क्लिक करें।\n2. Microphone को 'Allow' करें।\n3. पेज को रिफ्रेश करें।");
+                }
                 stopRecording();
             };
 
@@ -509,7 +512,21 @@
                 recognition.stop();
             } else {
                 document.getElementById("user-input").value = "";
-                recognition.start();
+                
+                // Check current microphone permissions status before starting
+                if (navigator.permissions && navigator.permissions.query) {
+                    navigator.permissions.query({ name: 'microphone' }).then(function(permissionStatus) {
+                        if (permissionStatus.state === 'denied') {
+                            alert("⚠️ माइक प्रमिशन ब्लॉक है!\n\nइसे चालू करने के लिए:\n1. ऊपर URL बार में ताला (🔒) आइकॉन पर क्लिक करें।\n2. Microphone को 'Allow' करें।\n3. पेज को रिफ्रेश करें।");
+                        } else {
+                            recognition.start();
+                        }
+                    }).catch(function(err) {
+                        recognition.start();
+                    });
+                } else {
+                    recognition.start();
+                }
             }
         } catch (err) {
             console.error("Failed to toggle recognition:", err);
