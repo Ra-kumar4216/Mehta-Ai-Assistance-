@@ -113,7 +113,7 @@
             color: #e2e8f0; 
             border-bottom-left-radius: 4px; 
             border: 1px solid rgba(255, 255, 255, 0.04);
-            padding-bottom: 44px; /* Space for action buttons */
+            padding-bottom: 40px; 
         }
         
         .code-container {
@@ -154,16 +154,10 @@
             color: white;
         }
         
-        /* 🔘 Actions Area Wrapper */
-        .bot-actions {
+        .copy-btn {
             position: absolute;
             bottom: 8px;
             right: 12px;
-            display: flex;
-            gap: 6px;
-        }
-        
-        .copy-btn, .speak-btn {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #94a3b8;
@@ -176,14 +170,9 @@
             align-items: center;
             gap: 4px;
         }
-        .copy-btn:hover, .speak-btn:hover {
+        .copy-btn:hover {
             background: rgba(255, 255, 255, 0.15);
             color: #ffffff;
-        }
-        
-        .speak-btn.playing {
-            background: #2563eb !important;
-            color: white !important;
         }
         
         .preview-container { 
@@ -236,6 +225,7 @@
         }
         .attach-btn:hover, .mic-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; border-color: rgba(255, 255, 255, 0.2); }
         
+        /* 🎙️ Mic active State Styling */
         .mic-btn.recording {
             background: #ef4444 !important;
             color: white !important;
@@ -262,4 +252,207 @@
         }
         button.send-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3); }
         
-        .chat-image { max-width: 100%; border-radius: 10px; margin-bottom:
+        .chat-image { max-width: 100%; border-radius: 10px; margin-bottom: 8px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">Mehta AI Assistant</div>
+    <div class="chat-messages" id="chat-box">
+        <div class="message bot">Hello! I'm Mehta, your smart assistant. How can I help you today?</div>
+    </div>
+    
+    <div class="preview-container" id="preview-area">
+        <img src="" id="img-preview" class="preview-img">
+        <span style="font-size: 0.9rem; color: #94a3b8; flex: 1;">Photo attached</span>
+        <button class="remove-btn" onclick="clearImage()">×</button>
+    </div>
+
+    <div class="chat-input-area">
+        <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="handleImageSelect()">
+        <button class="attach-btn" onclick="document.getElementById('image-input').click()" title="Attach Image">📎</button>
+        
+        <button class="mic-btn" id="mic-button" onclick="toggleVoiceInput()" title="Voice Input">🎙️</button>
+        
+        <input type="text" id="user-input" placeholder="Type or speak message..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button class="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    let selectedBase64Image = null;
+    let recognition = null;
+    let isRecording = false;
+
+    // 🎙️ Voice Recognition Setup (Automatic Hindi + English support)
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false; 
+        recognition.interimResults = false; 
+        recognition.lang = 'hi-IN'; // Default Hindi rakha hai jo English mix bhi samajhta hai
+
+        recognition.onstart = function() {
+            isRecording = true;
+            document.getElementById("mic-button").classList.add("recording");
+            document.getElementById("user-input").placeholder = "Listening...";
+        };
+
+        recognition.onresult = function(event) {
+            const speechToText = event.results[0][0].transcript;
+            document.getElementById("user-input").value = speechToText;
+        };
+
+        recognition.onerror = function(event) {
+            console.error("Speech recognition error", event.error);
+            stopRecording();
+        };
+
+        recognition.onend = function() {
+            stopRecording();
+        };
+    } else {
+        document.getElementById("mic-button").style.display = "none";
+        console.log("Speech recognition not supported in this browser.");
+    }
+
+    function toggleVoiceInput() {
+        if (!recognition) return;
+        if (isRecording) {
+            recognition.stop();
+        } else {
+            document.getElementById("user-input").value = "";
+            recognition.start();
+        }
+    }
+
+    function stopRecording() {
+        isRecording = false;
+        document.getElementById("mic-button").classList.remove("recording");
+        document.getElementById("user-input").placeholder = "Type or speak message...";
+    }
+
+    function handleImageSelect() {
+        const file = document.getElementById("image-input").files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById("img-preview").src = e.target.result;
+            document.getElementById("preview-area").style.display = "flex";
+            selectedBase64Image = e.target.result.split(',')[1];
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearImage() {
+        document.getElementById("image-input").value = "";
+        document.getElementById("img-preview").src = "";
+        document.getElementById("preview-area").style.display = "none";
+        selectedBase64Image = null;
+    }
+
+    function copyToClipboard(text, button) {
+        navigator.clipboard.writeText(text).then(() => {
+            button.innerText = "Copied! ✓";
+            const originalBg = button.style.background;
+            button.style.background = "#10b981";
+            button.style.color = "#ffffff";
+            setTimeout(() => {
+                button.innerText = button.classList.contains('code-copy-btn') ? "Copy Code 📋" : "Copy Whole Chat 📋";
+                button.style.background = originalBg;
+                button.style.color = button.classList.contains('code-copy-btn') ? "#38bdf8" : "#94a3b8";
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
+    }
+
+    async function sendMessage() {
+        const inputField = document.getElementById("user-input");
+        const chatBox = document.getElementById("chat-box");
+        const messageText = inputField.value.trim();
+        
+        if (!messageText && !selectedBase64Image) return;
+
+        const userDiv = document.createElement("div");
+        userDiv.className = "message user";
+        
+        if (selectedBase64Image) {
+            const imgElement = document.createElement("img");
+            imgElement.src = `data:image/jpeg;base64,${selectedBase64Image}`;
+            imgElement.className = "chat-image";
+            userDiv.appendChild(imgElement);
+        }
+        
+        if (messageText) {
+            const textSpan = document.createElement("span");
+            textSpan.innerText = messageText;
+            userDiv.appendChild(textSpan);
+        }
+        
+        chatBox.appendChild(userDiv);
+        inputField.value = "";
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        const imageToSend = selectedBase64Image;
+        clearImage();
+
+        const botDiv = document.createElement("div");
+        botDiv.className = "message bot";
+        botDiv.innerText = "Thinking...";
+        chatBox.appendChild(botDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        try {
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    message: messageText,
+                    image: imageToSend 
+                })
+            });
+            
+            const data = await response.json();
+            const replyText = data.reply || data.error || "Something went wrong.";
+            
+            let htmlContent = marked.parse(replyText);
+            botDiv.innerHTML = htmlContent;
+            
+            const preElements = botDiv.querySelectorAll("pre");
+            preElements.forEach((pre) => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "code-container";
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(pre);
+                
+                const codeBtn = document.createElement("button");
+                codeBtn.className = "code-copy-btn";
+                codeBtn.innerText = "Copy Code 📋";
+                
+                const codeText = pre.querySelector("code") ? pre.querySelector("code").innerText : pre.innerText;
+                codeBtn.onclick = function() {
+                    copyToClipboard(codeText, codeBtn);
+                };
+                wrapper.appendChild(codeBtn);
+            });
+            
+            const copyBtn = document.createElement("button");
+            copyBtn.className = "copy-btn";
+            copyBtn.innerHTML = "Copy Whole Chat 📋";
+            copyBtn.onclick = function() {
+                copyToClipboard(replyText, copyBtn);
+            };
+            botDiv.appendChild(copyBtn);
+
+        } catch (error) {
+            botDiv.innerText = "Error connecting to server.";
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
