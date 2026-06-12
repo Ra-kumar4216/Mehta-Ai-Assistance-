@@ -62,7 +62,6 @@
             animation: pulse 1.6s infinite;
         }
 
-        /* 🔥 FIXED: Added % symbol here */
         @keyframes pulse {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
@@ -76,7 +75,7 @@
             display: flex; 
             flex-direction: column; 
             gap: 14px; 
-            padding-bottom: 60px;
+            padding-bottom: 50px;
         }
 
         .chat-messages::-webkit-scrollbar { width: 6px; }
@@ -116,7 +115,7 @@
             color: #e2e8f0; 
             border-bottom-left-radius: 4px; 
             border: 1px solid rgba(255, 255, 255, 0.04);
-            padding-bottom: 55px; 
+            padding-bottom: 45px; 
         }
         
         .code-container {
@@ -157,22 +156,21 @@
             color: white;
         }
         
-        /* 🔘 Action Buttons Flex Layout */
+        /* 🔘 Action Buttons */
         .bot-actions {
             position: absolute;
             bottom: 8px;
             right: 12px;
             display: flex;
             gap: 6px;
-            z-index: 10;
         }
         
-        .copy-btn, .speak-btn {
+        .copy-btn {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #94a3b8;
             font-size: 0.75rem;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-radius: 6px;
             cursor: pointer;
             transition: 0.2s;
@@ -180,14 +178,9 @@
             align-items: center;
             gap: 4px;
         }
-        .copy-btn:hover, .speak-btn:hover {
+        .copy-btn:hover {
             background: rgba(255, 255, 255, 0.15);
             color: #ffffff;
-        }
-        .speak-btn.playing {
-            background: #ef4444 !important;
-            color: white !important;
-            border-color: #ef4444;
         }
         
         .preview-container { 
@@ -240,6 +233,7 @@
         }
         .attach-btn:hover, .mic-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; border-color: rgba(255, 255, 255, 0.2); }
         
+        /* 🎙️ Mic active State styling */
         .mic-btn.recording {
             background: #ef4444 !important;
             color: white !important;
@@ -274,12 +268,7 @@
 <div class="chat-container">
     <div class="chat-header">Mehta AI Assistant</div>
     <div class="chat-messages" id="chat-box">
-        <div class="message bot" id="welcome-msg">
-            Hello! I'm Mehta, your smart assistant. How can I help you today?
-            <div class="bot-actions">
-                <button class="speak-btn" onclick="speakText(Hello! I'm Mehta, your smart assistant. How can I help you today?, this)">🔊 Speak</button>
-            </div>
-        </div>
+        <div class="message bot">Hello! I'm Mehta, your smart assistant. How can I help you today?</div>
     </div>
     
     <div class="preview-container" id="preview-area">
@@ -291,7 +280,9 @@
     <div class="chat-input-area">
         <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="handleImageSelect()">
         <button class="attach-btn" onclick="document.getElementById('image-input').click()" title="Attach Image">📎</button>
+        
         <button class="mic-btn" id="mic-button" onclick="toggleVoiceInput()" title="Voice Input">🎙️</button>
+        
         <input type="text" id="user-input" placeholder="Type or speak message..." onkeypress="if(event.key === 'Enter') sendMessage()">
         <button class="send-btn" onclick="sendMessage()">Send</button>
     </div>
@@ -301,15 +292,14 @@
     let selectedBase64Image = null;
     let recognition = null;
     let isRecording = false;
-    let currentUtterance = null;
 
-    // 🎙️ Voice Recognition Setup
+    // 🎙️ Voice Recognition Setup (Automatic Hindi-English mix logic)
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
         recognition.continuous = false; 
         recognition.interimResults = false; 
-        recognition.lang = 'hi-IN';
+        recognition.lang = 'hi-IN'; // Default Hindi set but accepts mixed english sentences cleanly
 
         recognition.onstart = function() {
             isRecording = true;
@@ -337,45 +327,6 @@
         isRecording = false;
         document.getElementById("mic-button").classList.remove("recording");
         document.getElementById("user-input").placeholder = "Type or speak message...";
-    }
-
-    // 🗣️ Voice Output (TTS) Function
-    function speakText(text, button) {
-        if ('speechSynthesis' in window) {
-            if (window.speechSynthesis.speaking) {
-                window.speechSynthesis.cancel();
-                if (button.classList.contains('playing')) {
-                    button.classList.remove('playing');
-                    button.innerHTML = "🔊 Speak";
-                    return;
-                }
-            }
-
-            let cleanText = text.replace(/[\s\S]*?/g, '[Code block skipped]');
-            cleanText = cleanText.replace(/\[([\s\S]?)\]\([\s\S]?\)/g, '$1'); 
-            cleanText = cleanText.replace(/[#*`_\-]/g, '');
-
-            currentUtterance = new SpeechSynthesisUtterance(cleanText);
-            currentUtterance.lang = /[अ-ँ]/.test(text) ? 'hi-IN' : 'en-US';
-
-            currentUtterance.onstart = function() {
-                document.querySelectorAll('.speak-btn').forEach(btn => {
-                    btn.classList.remove('playing');
-                    btn.innerHTML = "🔊 Speak";
-                });
-                button.classList.add('playing');
-                button.innerHTML = "⏹️ Stop";
-            };
-
-            currentUtterance.onend = function() {
-                button.classList.remove('playing');
-                button.innerHTML = "🔊 Speak";
-            };
-
-            window.speechSynthesis.speak(currentUtterance);
-        } else {
-            alert("TTS not supported.");
-        }
     }
 
     function handleImageSelect() {
@@ -417,14 +368,13 @@
         const messageText = inputField.value.trim();
         
         if (!messageText && !selectedBase64Image) return;
-        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
         const userDiv = document.createElement("div");
         userDiv.className = "message user";
         
         if (selectedBase64Image) {
             const imgElement = document.createElement("img");
-            imgElement.src = data:image/jpeg;base64,${selectedBase64Image};
+            imgElement.src = `data:image/jpeg;base64,${selectedBase64Image}`;
             imgElement.className = "chat-image";
             userDiv.appendChild(imgElement);
         }
@@ -474,15 +424,8 @@
                 wrapper.appendChild(codeBtn);
             });
             
-            // 🔘 Fixed bot actions flex container
             const actionsDiv = document.createElement("div");
             actionsDiv.className = "bot-actions";
-            
-            const speakBtn = document.createElement("button");
-            speakBtn.className = "speak-btn";
-            speakBtn.innerHTML = "🔊 Speak";
-            speakBtn.onclick = function() { speakText(replyText, speakBtn); };
-            actionsDiv.appendChild(speakBtn);
             
             const copyBtn = document.createElement("button");
             copyBtn.className = "copy-btn";
