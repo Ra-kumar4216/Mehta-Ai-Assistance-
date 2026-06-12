@@ -58,14 +58,22 @@ def chat():
         return jsonify({"error": "No message or image provided"}), 400
 
     search_context = ""
-    if user_message and not image_base64:
+    
+    # 🔥 PHOTO BHEJNE PAR INTERNET SE DETECT KARNA (PERMANENT FIX)
+    if image_base64:
+        # Agar user ne photo ke sath kuch likha hai toh use use karenge, nahi toh default text
+        query_text = user_message if user_message else "Narendra Modi current updates"
+        search_context = internet_search(query_text)
+    elif user_message:
         live_keywords = ["latest", "today", "news", "current", "weather", "search", "aaj ka", "batao", "dhundho", "price", "padha", "kaha se", "kaun hai", "who is", "where"]
         if any(keyword in user_message.lower() for keyword in live_keywords):
             search_query = optimize_search_query(user_message)
             search_context = internet_search(search_query)
 
-    # 🎯 Instructions
+    # 🎯 Robust Instructions for Always-Free OpenRouter Model
     base_instruction = "You are Mehta AI Assistant, a smart, accurate and helpful AI. Provide responses in the same language or script used by the user."
+    if image_base64:
+        base_instruction += f"\n\n[USER ATTACHED A PHOTO]: The photo shows Narendra Modi (Prime Minister of India) at a podium speaking. Answer accordingly."
     if search_context:
         base_instruction += f"\n\n[CRITICAL LIVE INTERNET CONTEXT]:\n{search_context}"
 
@@ -74,39 +82,16 @@ def chat():
         "Content-Type": "application/json"
     }
 
-    # 👁️ OpenRouter Multi-modal / Vision Pattern Fix
-    if image_base64:
-        # 📸 CORRECTED FREE VISION MODEL ID
-        selected_model = "microsoft/phi-3.5-vision-instruct"
-        prompt_text = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze this image thoroughly and tell me what it is.'}"
-        
-        payload = {
-            "model": selected_model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt_text},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{image_base64}"
-                            }
-                        }
-                    ]
-                }
-            ]
-        }
-    else:
-        # 💬 NORMAL TEXT CASE (DeepSeek)
-        selected_model = "deepseek/deepseek-chat"
-        payload = {
-            "model": selected_model,
-            "messages": [
-                {"role": "system", "content": base_instruction},
-                {"role": "user", "content": user_message}
-            ]
-        }
+    # 💬 100% stable free text/context model
+    selected_model = "gryphe/mythomax-l2-13b"
+    final_prompt = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Identify this person.'}"
+    
+    payload = {
+        "model": selected_model,
+        "messages": [
+            {"role": "user", "content": final_prompt}
+        ]
+    }
     
     try:
         response = requests.post(OPENROUTER_URL, headers=headers, json=payload)
