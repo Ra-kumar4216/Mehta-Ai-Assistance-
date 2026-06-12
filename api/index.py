@@ -23,7 +23,7 @@ def internet_search(query):
         print(f"Search Error: {e}")
     return "No live internet data found."
 
-# 🎯 AI Query Optimizer Function
+# 🎯 AI Query Optimizer Function (Sawal ko Google Search friendly banane ke liye)
 def optimize_search_query(user_msg):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -57,18 +57,20 @@ def chat():
     if not user_message and not image_base64:
         return jsonify({"error": "No message or image provided"}), 400
 
-    # 🚀 ALWAYS BROWSE THE INTERNET FIRST
+    # 🚀 FORCED LIVE BROWSING: Ab koi if-else keyword conditions nahi!
+    # Chahe tum Hindi me likho ya English me, AI compulsory pehle internet check karega.
     if user_message:
         search_query = optimize_search_query(user_message)
     else:
         search_query = "Narendra Modi latest news current updates"
         
+    # Live internet data nikalna
     search_context = internet_search(search_query)
 
     # 🎯 System Instructions with strict 2026 Data Enforcement
     base_instruction = (
         "You are Mehta AI Assistant, a smart, 100% accurate, and highly updated AI. "
-        "The current date is June 12, 2026. You must ignore any old pre-2026 training data and ONLY use the provided real-time internet text context to give answers. "
+        "The current year is 2026. You must strictly ignore your pre-2026 training data and ONLY rely on the provided real-time internet context to answer the user. "
         "Provide responses beautifully formatted in the same language or script used by the user."
     )
     
@@ -76,14 +78,14 @@ def chat():
         base_instruction += f"\n\n[IMAGE CONTEXT]: The user has uploaded a photo of Narendra Modi (Prime Minister of India) speaking at a public event."
     
     if search_context and "No live internet data found" not in search_context:
-        base_instruction += f"\n\n[CRITICAL REAL-TIME LIVE INTERNET DATA FOR TODAY (JUNE 2026)]:\n{search_context}"
+        base_instruction += f"\n\n[CRITICAL REAL-TIME LIVE INTERNET DATA (YEAR 2026)]:\n{search_context}"
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
 
-    # 🔥 DEEPSEEK SET FOR PRIMARY RESPONSE GENERATION (Solves the 2021 context issue)
+    # 🔥 DEEPSEEK SET FOR ULTIMATE COGNITIVE RESPONSES
     selected_model = "deepseek/deepseek-chat"
     final_prompt = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze the current context and provide a summary.'}"
     
@@ -104,7 +106,6 @@ def chat():
             
         if 'choices' in res_data and len(res_data['choices']) > 0:
             reply = res_data['choices'][0]['message']['content']
-            # Clean deepseek thought tags if any remain
             clean_reply = re.sub(r'<think>.*?</think>', '', reply, flags=re.DOTALL).strip()
             return jsonify({"reply": clean_reply})
         else:
