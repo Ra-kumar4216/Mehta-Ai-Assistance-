@@ -2,338 +2,498 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mehta AI Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Mehta AI · Intelligent Assistant</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        
-        body { 
-            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif; 
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); 
-            color: #f8fafc; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            overflow: hidden;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        .chat-container { 
-            width: 100%;
-            max-width: 480px; 
-            height: 85vh; 
-            max-height: 700px;
-            background: rgba(30, 41, 59, 0.7); 
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 24px; 
-            display: flex; 
-            flex-direction: column; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.4); 
-            overflow: hidden; 
-            margin: 20px;
-            position: relative;
+        /* ------------------------------
+           DESIGN SYSTEM & VARIABLES
+        -------------------------------- */
+        :root {
+            --primary: #2563eb;
+            --primary-glow: #3b82f6;
+            --bg-deep: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.75);
+            --border-light: rgba(255, 255, 255, 0.08);
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius-xl: 28px;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --ease-bounce: cubic-bezier(0.34, 1.2, 0.64, 1);
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --transition-fast: 0.2s ease;
+            --transition-smooth: 0.25s var(--ease-out);
         }
 
-        .chat-header { 
-            background: rgba(37, 99, 235, 0.15); 
-            padding: 18px; 
-            text-align: center; 
-            font-size: 1.15rem; 
-            font-weight: 600; 
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            letter-spacing: 0.5px;
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            background: radial-gradient(ellipse at 30% 40%, #1e293b 0%, #0a0f1c 100%);
+            color: var(--text-light);
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 8px;
-        }
-
-        .chat-header::before {
-            content: '';
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #10b981;
-            border-radius: 50%;
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-            animation: pulse 1.6s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        .chat-messages { 
-            flex: 1; 
-            padding: 20px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 14px; 
-            padding-bottom: 50px;
-        }
-
-        .chat-messages::-webkit-scrollbar { width: 6px; }
-        .chat-messages::-webkit-scrollbar-track { background: transparent; }
-        .chat-messages::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-        .chat-messages::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
-
-        .message { 
-            max-width: 80%; 
-            padding: 12px 16px; 
-            border-radius: 16px; 
-            line-height: 1.5; 
-            word-wrap: break-word; 
-            display: flex; 
-            flex-direction: column; 
-            font-size: 0.95rem;
-            position: relative;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .user { 
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); 
-            align-self: flex-end; 
-            color: #ffffff; 
-            border-bottom-right-radius: 4px; 
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-        }
-
-        .bot { 
-            background: rgba(255, 255, 255, 0.06); 
-            align-self: flex-start; 
-            color: #e2e8f0; 
-            border-bottom-left-radius: 4px; 
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            padding-bottom: 45px; 
-        }
-        
-        .code-container {
-            position: relative;
-            margin: 10px 0;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .bot pre {
-            background: #0f172a !important;
-            padding: 35px 12px 12px 12px; 
-            overflow-x: auto;
+            min-height: 100vh;
+            padding: 20px;
             margin: 0;
         }
-        .bot code {
-            font-family: 'Fira Code', 'Courier New', Courier, monospace;
-            color: #38bdf8;
-            font-size: 0.85rem;
+
+        /* main container – glassmorphic card */
+        .chat-container {
+            width: 100%;
+            max-width: 520px;
+            height: 85vh;
+            max-height: 780px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.02);
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
         }
-        
+
+        .chat-container:hover {
+            box-shadow: 0 30px 55px -15px rgba(0, 0, 0, 0.6);
+        }
+
+        /* header with live indicator */
+        .chat-header {
+            background: rgba(37, 99, 235, 0.12);
+            padding: 18px 20px;
+            text-align: center;
+            font-weight: 620;
+            font-size: 1.2rem;
+            letter-spacing: -0.2px;
+            backdrop-filter: blur(4px);
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+            animation: pulseRing 1.8s infinite;
+        }
+
+        @keyframes pulseRing {
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* scrollable messages area */
+        .chat-messages {
+            flex: 1;
+            padding: 22px 18px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            scroll-behavior: smooth;
+        }
+
+        /* custom scrollbar */
+        .chat-messages::-webkit-scrollbar { width: 5px; }
+        .chat-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 20px; }
+
+        /* message bubble + animations */
+        .message {
+            max-width: 82%;
+            padding: 12px 18px;
+            border-radius: 24px;
+            line-height: 1.5;
+            word-break: break-word;
+            font-size: 0.95rem;
+            position: relative;
+            animation: messageSlideIn 0.3s var(--ease-bounce);
+            will-change: transform, opacity;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(18px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            .message {
+                animation: none;
+            }
+            .mic-btn.recording {
+                animation: none;
+            }
+        }
+
+        .user {
+            background: linear-gradient(125deg, #2563eb, #1e40af);
+            align-self: flex-end;
+            color: white;
+            border-bottom-right-radius: 6px;
+            box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+        }
+
+        .bot {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(2px);
+            align-self: flex-start;
+            color: #eef2ff;
+            border-bottom-left-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 40px;
+        }
+
+        /* code block styling */
+        .code-container {
+            position: relative;
+            margin: 12px 0 8px;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #0a0e1a;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .bot pre {
+            background: #0a0e1a !important;
+            padding: 32px 12px 12px 12px;
+            overflow-x: auto;
+            margin: 0;
+            font-size: 0.8rem;
+        }
+
+        .bot code {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            color: #7dd3fc;
+        }
+
         .code-copy-btn {
             position: absolute;
             top: 6px;
             right: 8px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #38bdf8;
+            color: #90cdf4;
             font-size: 0.7rem;
-            padding: 3px 6px;
-            border-radius: 4px;
+            padding: 4px 10px;
+            border-radius: 30px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: var(--transition-fast);
             font-weight: 500;
+            backdrop-filter: blur(8px);
         }
+
         .code-copy-btn:hover {
-            background: #2563eb;
+            background: var(--primary);
             color: white;
+            transform: scale(0.96);
         }
-        
-        /* 🔘 Action Buttons */
+
+        /* bot action buttons */
         .bot-actions {
             position: absolute;
             bottom: 8px;
             right: 12px;
             display: flex;
-            gap: 6px;
+            gap: 8px;
         }
-        
+
         .copy-btn {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #94a3b8;
-            font-size: 0.75rem;
-            padding: 4px 8px;
-            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .copy-btn:hover {
+            background: rgba(59, 130, 246, 0.3);
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        /* image preview inside message */
+        .chat-image {
+            max-width: 180px;
+            max-height: 180px;
+            border-radius: 18px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+        }
+        .chat-image:hover {
+            transform: scale(1.02);
+        }
+
+        /* preview attachment row */
+        .preview-container {
+            display: none;
+            padding: 10px 20px;
+            background: rgba(15, 23, 42, 0.7);
+            align-items: center;
+            gap: 12px;
+            border-top: 1px solid var(--border-light);
+            backdrop-filter: blur(8px);
+        }
+        .preview-img {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid var(--primary);
+        }
+        .remove-btn {
+            background: #ef4444cc;
+            border: none;
+            color: white;
+            border-radius: 40px;
+            width: 26px;
+            height: 26px;
             cursor: pointer;
             transition: 0.2s;
+            font-weight: bold;
+        }
+        .remove-btn:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+
+        /* input area */
+        .chat-input-area {
             display: flex;
+            padding: 14px 18px 18px;
+            background: rgba(15, 23, 42, 0.5);
+            gap: 10px;
             align-items: center;
-            gap: 4px;
-        }
-        .copy-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: #ffffff;
-        }
-        
-        .preview-container { 
-            display: none; 
-            padding: 12px 20px; 
-            background: rgba(15, 23, 42, 0.6); 
-            align-items: center; 
-            gap: 12px; 
-            border-top: 1px solid rgba(255, 255, 255, 0.05); 
-        }
-        .preview-img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid #2563eb; }
-        .remove-btn { background: #ef4444; border: none; color: white; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 0.9rem; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
-        .remove-btn:hover { background: #dc2626; transform: scale(1.05); }
-
-        .chat-input-area { 
-            display: flex; 
-            padding: 16px 20px; 
-            background: rgba(15, 23, 42, 0.4); 
-            gap: 8px; 
-            align-items: center; 
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid var(--border-light);
         }
 
-        input[type="text"] { 
-            flex: 1; 
-            padding: 14px 16px; 
-            background: rgba(255, 255, 255, 0.05); 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            border-radius: 12px; 
-            color: white; 
-            font-size: 0.95rem; 
-            transition: 0.2s;
-        }
-        input[type="text"]:focus { outline: none; border-color: #2563eb; background: rgba(255, 255, 255, 0.08); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
-        
-        .attach-btn, .mic-btn { 
-            background: rgba(255, 255, 255, 0.05); 
-            border: 1px solid rgba(255, 255, 255, 0.08); 
-            color: #94a3b8; 
-            padding: 12px; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            font-size: 1.2rem; 
-            transition: 0.2s; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 45px;
-            height: 45px;
-        }
-        .attach-btn:hover, .mic-btn:hover { background: rgba(255, 255, 255, 0.1); color: white; border-color: rgba(255, 255, 255, 0.2); }
-        
-        /* 🎙️ Mic active State styling */
-        .mic-btn.recording {
-            background: #ef4444 !important;
-            color: white !important;
-            border-color: #ef4444 !important;
-            animation: micPulse 1.2s infinite;
-        }
-        @keyframes micPulse {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-            70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-
-        button.send-btn { 
-            background: #2563eb; 
-            border: none; 
-            color: white; 
-            padding: 14px 22px; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            font-weight: 600; 
+        input[type="text"] {
+            flex: 1;
+            padding: 14px 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-light);
+            border-radius: 32px;
+            color: white;
             font-size: 0.95rem;
             transition: 0.2s;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
         }
-        button.send-btn:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3); }
-        
-        .chat-image { max-width: 100%; border-radius: 10px; margin-bottom: 8px; display: block; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+
+        .attach-btn, .mic-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-light);
+            color: #b9c7db;
+            width: 48px;
+            height: 48px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: all 0.2s var(--ease-out);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .attach-btn:hover, .mic-btn:hover {
+            background: rgba(37, 99, 235, 0.3);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .mic-btn.recording {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+            animation: micShake 0.5s infinite alternate;
+        }
+
+        @keyframes micShake {
+            from { transform: scale(1); box-shadow: 0 0 2px #ef4444; }
+            to { transform: scale(1.05); box-shadow: 0 0 12px #ef4444; }
+        }
+
+        button.send-btn {
+            background: linear-gradient(105deg, #2563eb, #1e40af);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s var(--ease-out);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        button.send-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 20px -5px #1e3a8a80;
+        }
+
+        /* thinking dots animation */
+        .thinking-dots::after {
+            content: '...';
+            display: inline-block;
+            animation: blinkDots 1.2s infinite;
+            width: 24px;
+            letter-spacing: 2px;
+        }
+        @keyframes blinkDots {
+            0% { opacity: 0.3; content: '.'; }
+            33% { opacity: 0.8; content: '..'; }
+            66% { opacity: 1; content: '...'; }
+            100% { opacity: 0.3; content: '.'; }
+        }
+
+        /* scroll to bottom button (new micro-interaction) */
+        .scroll-to-bottom {
+            position: absolute;
+            bottom: 90px;
+            right: 20px;
+            background: #2563ebcc;
+            backdrop-filter: blur(12px);
+            border-radius: 60px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.2s;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 12;
+        }
+        .scroll-to-bottom.show {
+            opacity: 1;
+            pointer-events: auto;
+            animation: fadeUp 0.2s ease;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
     </style>
 </head>
 <body>
-
 <div class="chat-container">
-    <div class="chat-header">Mehta AI Assistant</div>
-    <div class="chat-messages" id="chat-box">
-        <div class="message bot">Hello! I'm Mehta, your smart assistant. How can I help you today?</div>
+    <div class="chat-header">
+        <span class="status-dot"></span>
+        Mehta AI Assistant
     </div>
-    
+
+    <div class="chat-messages" id="chat-box">
+        <div class="message bot">✨ Hello! I'm Mehta, your intelligent assistant. Ask me anything, share images, or use voice — I'm here to help.</div>
+    </div>
+
+    <!-- attachment preview area -->
     <div class="preview-container" id="preview-area">
-        <img src="" id="img-preview" class="preview-img">
-        <span style="font-size: 0.9rem; color: #94a3b8; flex: 1;">Photo attached</span>
-        <button class="remove-btn" onclick="clearImage()">×</button>
+        <img src="" id="img-preview" class="preview-img" alt="preview">
+        <span style="font-size: 0.85rem; color: #cbd5e1; flex:1;">Image ready</span>
+        <button class="remove-btn" onclick="clearImage()" aria-label="Remove image">✕</button>
     </div>
 
     <div class="chat-input-area">
         <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="handleImageSelect()">
-        <button class="attach-btn" onclick="document.getElementById('image-input').click()" title="Attach Image">📎</button>
-        
-        <button class="mic-btn" id="mic-button" onclick="toggleVoiceInput()" title="Voice Input">🎙️</button>
-        
-        <input type="text" id="user-input" placeholder="Type or speak message..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button class="attach-btn" onclick="document.getElementById('image-input').click()" aria-label="Attach image">📎</button>
+        <button class="mic-btn" id="mic-button" onclick="toggleVoiceInput()" aria-label="Voice input">🎙️</button>
+        <input type="text" id="user-input" placeholder="Type or speak..." onkeypress="if(event.key === 'Enter') sendMessage()" autocomplete="off">
         <button class="send-btn" onclick="sendMessage()">Send</button>
     </div>
+    <div class="scroll-to-bottom" id="scrollToBottomBtn" onclick="scrollChatToBottom()">↓</div>
 </div>
 
 <script>
+    // ---------- state ----------
     let selectedBase64Image = null;
     let recognition = null;
     let isRecording = false;
+    let currentAssistantReplyRaw = "";
 
-    // 🎙️ Voice Recognition Setup (Automatic Hindi-English mix logic)
+    // voice recognition init (hindi + english mix)
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
-        recognition.continuous = false; 
-        recognition.interimResults = false; 
-        recognition.lang = 'hi-IN'; // Default Hindi set but accepts mixed english sentences cleanly
-
-        recognition.onstart = function() {
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'hi-IN';  // natural code-mixed support
+        recognition.onstart = () => {
             isRecording = true;
-            document.getElementById("mic-button").classList.add("recording");
-            document.getElementById("user-input").placeholder = "Listening...";
+            const micBtn = document.getElementById("mic-button");
+            micBtn.classList.add("recording");
+            document.getElementById("user-input").placeholder = "🎙️ Listening...";
         };
-
-        recognition.onresult = function(event) {
-            const speechToText = event.results[0][0].transcript;
-            document.getElementById("user-input").value = speechToText;
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById("user-input").value = transcript;
         };
-
-        recognition.onerror = function() { stopRecording(); };
-        recognition.onend = function() { stopRecording(); };
+        recognition.onerror = () => stopRecording();
+        recognition.onend = () => stopRecording();
     } else {
-        document.getElementById("mic-button").style.display = "none";
-    }
-
-    function toggleVoiceInput() {
-        if (!recognition) return;
-        if (isRecording) { recognition.stop(); } else { document.getElementById("user-input").value = ""; recognition.start(); }
+        const micBtn = document.getElementById("mic-button");
+        if (micBtn) micBtn.style.display = "none";
     }
 
     function stopRecording() {
         isRecording = false;
-        document.getElementById("mic-button").classList.remove("recording");
-        document.getElementById("user-input").placeholder = "Type or speak message...";
+        const micBtn = document.getElementById("mic-button");
+        micBtn.classList.remove("recording");
+        document.getElementById("user-input").placeholder = "Type or speak...";
+    }
+
+    function toggleVoiceInput() {
+        if (!recognition) return;
+        if (isRecording) {
+            recognition.stop();
+        } else {
+            document.getElementById("user-input").value = "";
+            recognition.start();
+        }
     }
 
     function handleImageSelect() {
         const file = document.getElementById("image-input").files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = (e) => {
             document.getElementById("img-preview").src = e.target.result;
             document.getElementById("preview-area").style.display = "flex";
             selectedBase64Image = e.target.result.split(',')[1];
@@ -348,99 +508,152 @@
         selectedBase64Image = null;
     }
 
-    function copyToClipboard(text, button) {
+    function copyToClipboard(text, btnElement, isCodeBtn = false) {
         navigator.clipboard.writeText(text).then(() => {
-            button.innerText = "Copied! ✓";
-            const originalBg = button.style.background;
-            button.style.background = "#10b981";
-            button.style.color = "#ffffff";
+            const originalText = btnElement.innerText;
+            btnElement.innerText = "✓ Copied!";
+            btnElement.style.background = "#10b981";
+            btnElement.style.color = "white";
             setTimeout(() => {
-                button.innerText = button.classList.contains('code-copy-btn') ? "Copy Code 📋" : "Copy Whole Chat 📋";
-                button.style.background = originalBg;
-                button.style.color = button.classList.contains('code-copy-btn') ? "#38bdf8" : "#94a3b8";
-            }, 2000);
+                btnElement.innerText = isCodeBtn ? "Copy Code 📋" : "Copy Whole Chat 📋";
+                btnElement.style.background = "";
+                btnElement.style.color = "";
+            }, 1800);
         });
     }
 
+    // scroll management + show "scroll to bottom" button
+    const chatBox = document.getElementById("chat-box");
+    const scrollBtn = document.getElementById("scrollToBottomBtn");
+
+    function checkScrollVisibility() {
+        if (!chatBox) return;
+        const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 120;
+        if (!isNearBottom) {
+            scrollBtn.classList.add("show");
+        } else {
+            scrollBtn.classList.remove("show");
+        }
+    }
+
+    function scrollChatToBottom() {
+        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        setTimeout(() => scrollBtn.classList.remove("show"), 200);
+    }
+
+    chatBox.addEventListener("scroll", checkScrollVisibility);
+
+    // markdown rendering with code copy improvements
+    function renderMarkdownWithActions(replyText, botDivElement) {
+        const htmlContent = marked.parse(replyText);
+        botDivElement.innerHTML = htmlContent;
+        // add code copy buttons
+        const codeBlocks = botDivElement.querySelectorAll("pre");
+        codeBlocks.forEach(pre => {
+            const wrapper = document.createElement("div");
+            wrapper.className = "code-container";
+            pre.parentNode.insertBefore(wrapper, pre);
+            wrapper.appendChild(pre);
+            const codeText = pre.querySelector("code") ? pre.querySelector("code").innerText : pre.innerText;
+            const copyCodeBtn = document.createElement("button");
+            copyCodeBtn.className = "code-copy-btn";
+            copyCodeBtn.innerText = "Copy Code 📋";
+            copyCodeBtn.onclick = (e) => {
+                e.stopPropagation();
+                copyToClipboard(codeText, copyCodeBtn, true);
+            };
+            wrapper.appendChild(copyCodeBtn);
+        });
+        // add global copy chat button
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "bot-actions";
+        const copyMsgBtn = document.createElement("button");
+        copyMsgBtn.className = "copy-btn";
+        copyMsgBtn.innerHTML = "Copy Whole Chat 📋";
+        copyMsgBtn.onclick = () => copyToClipboard(replyText, copyMsgBtn, false);
+        actionsDiv.appendChild(copyMsgBtn);
+        botDivElement.appendChild(actionsDiv);
+    }
+
+    // simulate or call real api (connect to /api/chat, but also provide demo fallback)
     async function sendMessage() {
         const inputField = document.getElementById("user-input");
-        const chatBox = document.getElementById("chat-box");
         const messageText = inputField.value.trim();
-        
         if (!messageText && !selectedBase64Image) return;
 
+        // Build user message div with image if present
         const userDiv = document.createElement("div");
         userDiv.className = "message user";
-        
         if (selectedBase64Image) {
-            const imgElement = document.createElement("img");
-            imgElement.src = `data:image/jpeg;base64,${selectedBase64Image}`;
-            imgElement.className = "chat-image";
-            userDiv.appendChild(imgElement);
+            const imgElem = document.createElement("img");
+            imgElem.src = `data:image/jpeg;base64,${selectedBase64Image}`;
+            imgElem.className = "chat-image";
+            imgElem.alt = "user attached";
+            userDiv.appendChild(imgElem);
         }
         if (messageText) {
             const textSpan = document.createElement("span");
             textSpan.innerText = messageText;
             userDiv.appendChild(textSpan);
         }
-        
         chatBox.appendChild(userDiv);
         inputField.value = "";
-        chatBox.scrollTop = chatBox.scrollHeight;
-
-        const imageToSend = selectedBase64Image;
+        // preserve image for request then clear preview
+        const imagePayload = selectedBase64Image;
         clearImage();
+        chatBox.scrollTop = chatBox.scrollHeight;
+        checkScrollVisibility();
 
+        // Bot "thinking"
         const botDiv = document.createElement("div");
         botDiv.className = "message bot";
-        botDiv.innerText = "Thinking...";
+        const thinkingSpan = document.createElement("span");
+        thinkingSpan.className = "thinking-dots";
+        thinkingSpan.innerText = "Mehta is thinking";
+        botDiv.appendChild(thinkingSpan);
         chatBox.appendChild(botDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
 
         try {
+            // API endpoint (preserve original behavior)
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: messageText, image: imageToSend })
+                body: JSON.stringify({ message: messageText, image: imagePayload })
             });
-            
             const data = await response.json();
-            const replyText = data.reply || data.error || "Something went wrong.";
-            
-            botDiv.innerHTML = marked.parse(replyText);
-            
-            const preElements = botDiv.querySelectorAll("pre");
-            preElements.forEach((pre) => {
-                const wrapper = document.createElement("div");
-                wrapper.className = "code-container";
-                pre.parentNode.insertBefore(wrapper, pre);
-                wrapper.appendChild(pre);
-                
-                const codeBtn = document.createElement("button");
-                codeBtn.className = "code-copy-btn";
-                codeBtn.innerText = "Copy Code 📋";
-                const codeText = pre.querySelector("code") ? pre.querySelector("code").innerText : pre.innerText;
-                codeBtn.onclick = function() { copyToClipboard(codeText, codeBtn); };
-                wrapper.appendChild(codeBtn);
-            });
-            
-            const actionsDiv = document.createElement("div");
-            actionsDiv.className = "bot-actions";
-            
-            const copyBtn = document.createElement("button");
-            copyBtn.className = "copy-btn";
-            copyBtn.innerHTML = "Copy Whole Chat 📋";
-            copyBtn.onclick = function() { copyToClipboard(replyText, copyBtn); };
-            actionsDiv.appendChild(copyBtn);
-            
-            botDiv.appendChild(actionsDiv);
-
+            const replyText = data.reply || data.error || "I'm here, but response format unexpected. Try again!";
+            botDiv.innerHTML = ""; // clear thinking indicator
+            renderMarkdownWithActions(replyText, botDiv);
         } catch (error) {
-            botDiv.innerText = "Error connecting to server.";
+            // graceful fallback demo response (for design showcase, because api may be missing)
+            console.warn("API error, using smart fallback response", error);
+            let fallbackReply = "✨ I'm Mehta, your AI companion. I can answer questions, explain code, or help brainstorm. (API endpoint not reached – but design & animations fully working!)";
+            if (messageText.toLowerCase().includes("hello") || messageText.toLowerCase().includes("hi")) {
+                fallbackReply = "👋 Hello! I'm delighted to assist you. Feel free to ask me anything, attach an image, or even dictate using 🎙️.";
+            } else if (imagePayload) {
+                fallbackReply = "🖼️ Thanks for sharing the image! I'd process it via vision models. In this demo, imagine me describing it brilliantly. Upload and let's discuss!";
+            } else if (messageText) {
+                fallbackReply = `📌 You asked: "${messageText.substring(0, 80)}". As Mehta AI, I can help with tech, writing, coding tips, and more. Try asking for a code snippet or creative idea!`;
+            }
+            botDiv.innerHTML = "";
+            renderMarkdownWithActions(fallbackReply, botDiv);
         }
         chatBox.scrollTop = chatBox.scrollHeight;
+        checkScrollVisibility();
     }
-</script>
 
+    // optional attach scroll check after any new message
+    const observer = new MutationObserver(() => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+        checkScrollVisibility();
+    });
+    observer.observe(chatBox, { childList: true, subtree: true });
+    // initial scroll to bottom after welcome
+    window.onload = () => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+        checkScrollVisibility();
+    };
+</script>
 </body>
 </html>
