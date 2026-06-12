@@ -34,6 +34,7 @@
             box-shadow: 0 20px 50px rgba(0,0,0,0.4); 
             overflow: hidden; 
             margin: 20px;
+            position: relative;
         }
 
         .chat-header { 
@@ -61,8 +62,9 @@
             animation: pulse 1.6s infinite;
         }
 
+        /* 🔥 FIXED: Added % symbol here */
         @keyframes pulse {
-            0 { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
@@ -74,6 +76,7 @@
             display: flex; 
             flex-direction: column; 
             gap: 14px; 
+            padding-bottom: 60px;
         }
 
         .chat-messages::-webkit-scrollbar { width: 6px; }
@@ -113,7 +116,7 @@
             color: #e2e8f0; 
             border-bottom-left-radius: 4px; 
             border: 1px solid rgba(255, 255, 255, 0.04);
-            padding-bottom: 50px; /* Space for action buttons */
+            padding-bottom: 55px; 
         }
         
         .code-container {
@@ -154,7 +157,7 @@
             color: white;
         }
         
-        /* 🔘 Bottom Action Buttons Flex Layout */
+        /* 🔘 Action Buttons Flex Layout */
         .bot-actions {
             position: absolute;
             bottom: 8px;
@@ -169,7 +172,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #94a3b8;
             font-size: 0.75rem;
-            padding: 5px 9px;
+            padding: 5px 10px;
             border-radius: 6px;
             cursor: pointer;
             transition: 0.2s;
@@ -274,7 +277,7 @@
         <div class="message bot" id="welcome-msg">
             Hello! I'm Mehta, your smart assistant. How can I help you today?
             <div class="bot-actions">
-                <button class="speak-btn" onclick="speakText(`Hello! I'm Mehta, your smart assistant. How can I help you today?`, this)">🔊 Speak</button>
+                <button class="speak-btn" onclick="speakText(Hello! I'm Mehta, your smart assistant. How can I help you today?, this)">🔊 Speak</button>
             </div>
         </div>
     </div>
@@ -348,8 +351,8 @@
                 }
             }
 
-            let cleanText = text.replace(/```[\s\S]*?```/g, '[Code block skipped]');
-            cleanText = cleanText.replace(/\[([\s\S]*?)\]\([\s\S]*?\)/g, '$1'); 
+            let cleanText = text.replace(/[\s\S]*?/g, '[Code block skipped]');
+            cleanText = cleanText.replace(/\[([\s\S]?)\]\([\s\S]?\)/g, '$1'); 
             cleanText = cleanText.replace(/[#*`_\-]/g, '');
 
             currentUtterance = new SpeechSynthesisUtterance(cleanText);
@@ -421,7 +424,7 @@
         
         if (selectedBase64Image) {
             const imgElement = document.createElement("img");
-            imgElement.src = `data:image/jpeg;base64,${selectedBase64Image}`;
+            imgElement.src = data:image/jpeg;base64,${selectedBase64Image};
             imgElement.className = "chat-image";
             userDiv.appendChild(imgElement);
         }
@@ -471,7 +474,7 @@
                 wrapper.appendChild(codeBtn);
             });
             
-            // 🔘 FIXED BOTH BUTTONS IN A FLEX BOX
+            // 🔘 Fixed bot actions flex container
             const actionsDiv = document.createElement("div");
             actionsDiv.className = "bot-actions";
             
