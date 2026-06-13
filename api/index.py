@@ -52,15 +52,16 @@ def chat():
             return jsonify({"error": "Message or image required"}), 400
             
         search_context = ""
-        # सिर्फ तभी सर्च करें जब इमेज न हो या कोई विशिष्ट टेक्स्ट पूछा गया हो
+        # 🌟 यहाँ सुधार है: अगर यूज़र ने इमेज भेजी है, तो इंटरनेट सर्च बिलकुल मत करो!
         if user_message and not image_data_url:
             search_context = internet_search(user_message)
             
-        # 🌟 सिस्टम इंस्ट्रक्शन को मॉडल के अंदर सही तरीके से सेट कर रहे हैं
+        # सिस्टम इंस्ट्रक्शन
         base_instruction = (
             "You are Mehta AI, a highly accurate and updated assistant for 2026. "
-            "If the user uploads an image, priority must be given to analyzing and identifying the image content. "
-            "Respond directly, confidently, and clearly in the same language as the user."
+            "If the user uploads an image, analyze and identify the actual image content accurately. "
+            "Do not talk about Narendra Modi unless he is actually present in the image. "
+            "Respond directly and clearly in the same language as the user."
         )
         
         model = genai.GenerativeModel(
@@ -70,7 +71,7 @@ def chat():
         
         content_parts = []
         
-        # 1. अगर इमेज है, तो उसे सबसे पहले जोड़ें
+        # 1. अगर इमेज है, तो उसे सबसे पहले बाइट्स में कन्वर्ट करके जोड़ें
         if image_data_url and "," in image_data_url:
             header, encoded = image_data_url.split(",", 1)
             mime_type = header.split(";")[0].split(":")[1]
@@ -87,7 +88,7 @@ def chat():
         elif user_message:
             content_parts.append(user_message)
         else:
-            content_parts.append("Is image ko dekho aur batao ye kya hai ya kaun hai.")
+            content_parts.append("Is image ko dhyan se dekho aur batao ye kya hai ya kaun hai.")
             
         # Gemini से रिस्पॉन्स लें
         response = model.generate_content(content_parts)
