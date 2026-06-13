@@ -1,5 +1,5 @@
 google-generativeai
-duckduckgo_search==6.1.7
+duckduckgo_search==5.3.1b1
 flask
 flask-cors
 requests
