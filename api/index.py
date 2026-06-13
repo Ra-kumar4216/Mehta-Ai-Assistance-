@@ -3,7 +3,7 @@ from flask_cors import CORS
 import os
 import requests
 import re
-from duckduckgo_search import DDGS  # Live search engine
+from duckduckgo_search import DDGS
 
 app = Flask(__name__)
 CORS(app)
@@ -11,106 +11,101 @@ CORS(app)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# 🌐 100% Real-Time Web Search Function
+# 🌐 Real-Time Web Search
 def internet_search(query):
     try:
         with DDGS() as ddgs:
-            results = [r for r in ddgs.text(query, max_results=4)]
+            results = [r for r in ddgs.text(query, max_results=3)]
             if results:
-                search_text = "\n".join([f"- {r['title']}: {r['body']}" for r in results])
-                return search_text
-    except Exception as e:
-        print(f"Search Error: {e}")
-    return "No live internet data found."
-
-# 🎯 AI Query Optimizer Function
-def optimize_search_query(user_msg):
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": "deepseek/deepseek-chat",
-        "messages": [
-            {
-                "role": "system", 
-                "content": "You are an expert search query optimizer. Convert the user's prompt into a clean, effective English search engine query (keywords only). Respond ONLY with the search query text, no explanation, no quotes."
-            },
-            {"role": "user", "content": user_msg}
-        ]
-    }
-    try:
-        res = requests.post(OPENROUTER_URL, headers=headers, json=payload)
-        res_data = res.json()
-        raw_content = res_data['choices'][0]['message']['content'].strip()
-        # Robust deepseek thinking tags cleaner
-        clean_query = re.sub(r'<think>[\s\S]*?</think>', '', raw_content).strip()
-        return clean_query.replace('"', '').replace("'", "")
+                return "\n".join([f"- {r['title']}: {r['body']}" for r in results])
     except:
-        return user_msg
+        pass
+    return ""
+
+# Search Optimizer
+def optimize_search_query(user_msg):
+    # Simple fallback for free
+    return user_msg[:200] if user_msg else "latest news"
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.json or {}
     user_message = data.get("message", "").strip()
-    image_base64 = data.get("image", None)  # 📸 Frontend se image
-    
+    image_base64 = data.get("image", None)
+
     if not user_message and not image_base64:
-        return jsonify({"error": "No message or image provided"}), 400
+        return jsonify({"error": "Message or image required"}), 400
 
-    # 🚀 ALWAYS BROWSE THE INTERNET DIRECTLY
-    if user_message:
-        search_query = optimize_search_query(user_message)
-    else:
-        search_query = "Narendra Modi latest news current updates"
-        
-    search_context = internet_search(search_query)
-
-    # 🎯 System Instructions with strict 2026 Data Enforcement
-    base_instruction = (
-        "You are Mehta AI Assistant, a smart, 100% accurate, and highly updated AI. "
-        "The current year is 2026. You must strictly ignore your pre-2026 knowledge or training and ONLY rely on the provided live search data. "
-        "For example, as of April 15, 2026, Samrat Choudhary is the new Chief Minister of Bihar. Always prioritize the newest live facts provided in the context. "
-        "Provide responses beautifully formatted in the same language or script used by the user."
-    )
-    
-    if image_base64:
-        base_instruction += f"\n\n[IMAGE CONTEXT]: The user has uploaded a photo."
-    
-    if search_context and "No live internet data found" not in search_context:
-        base_instruction += f"\n\n[CRITICAL REAL-TIME LIVE INTERNET DATA (YEAR 2026)]:\n{search_context}"
+    search_context = internet_search(user_message) if user_message else ""
 
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
 
-    # 🔥 DEEPSEEK SET FOR PRIMARY RESPONSE
-    selected_model = "deepseek/deepseek-chat"
-    final_prompt = f"{base_instruction}\n\nUser Question: {user_message if user_message else 'Analyze the current context and provide a summary.'}"
-    
-    payload = {
-        "model": selected_model,
-        "messages": [
+    base_instruction = (
+        "You are Mehta AI, a helpful and intelligent assistant. "
+        "Respond in the same language as the user. Be detailed and accurate."
+    )
+
+    # ==================== FREE VISION SETUP ====================
+    if image_base64:
+        # Free Vision Model
+        selected_model = "google/gemma-4-31b-it:free"   # Best free vision right now
+        
+        content = []
+        
+        if user_message:
+            content.append({"type": "text", "text": user_message})
+        else:
+            content.append({"type": "text", "text": "Is image ko bahut detail mein analyze karo. Sab kuch describe karo."})
+        
+        content.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
+        })
+
+        messages = [
+            {"role": "system", "content": base_instruction},
+            {"role": "user", "content": content}
+        ]
+
+        if search_context:
+            messages.append({"role": "user", "content": f"[Live Internet Context]:\n{search_context}"})
+
+    else:
+        # Normal Text Chat (Free Model)
+        selected_model = "deepseek/deepseek-chat"   # Ya "qwen/qwen2.5-coder-32b-instruct:free"
+        
+        final_prompt = f"{base_instruction}\n\n{search_context}\n\nUser: {user_message}"
+        
+        messages = [
+            {"role": "system", "content": base_instruction},
             {"role": "user", "content": final_prompt}
         ]
+
+    payload = {
+        "model": selected_model,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 2048
     }
-    
+
     try:
-        response = requests.post(OPENROUTER_URL, headers=headers, json=payload)
+        response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=60)
         res_data = response.json()
-        
+
         if 'error' in res_data:
-            error_msg = res_data['error'].get('message', 'Unknown OpenRouter Error')
-            return jsonify({"reply": f"OpenRouter Error: {error_msg}"})
-            
-        if 'choices' in res_data and len(res_data['choices']) > 0:
-            reply = res_data['choices'][0]['message']['content']
-            # Secure cleaning of thought tags
-            clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', reply).strip()
-            return jsonify({"reply": clean_reply})
-        else:
-            return jsonify({"reply": "Unexpected response structure from OpenRouter server. Please try again."})
-            
+            return jsonify({"reply": f"Error: {res_data['error'].get('message', 'Unknown error')}"})
+
+        reply = res_data['choices'][0]['message']['content']
+        clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', reply).strip()
+        
+        return jsonify({"reply": clean_reply})
+
     except Exception as e:
         return jsonify({"reply": f"Backend Error: {str(e)}"}), 500
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
