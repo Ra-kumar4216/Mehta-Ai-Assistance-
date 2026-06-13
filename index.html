@@ -93,7 +93,7 @@
         }
 
         @keyframes pulseRing {
-            0 { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
@@ -447,7 +447,7 @@
     let isRecording = false;
     let currentAssistantReplyRaw = "";
 
-    // 🌟 यहाँ बड़ा बदलाव: सभी ब्राउज़र्स (Chrome, Safari, Edge, Firefox) को सपोर्ट करने के लिए यूनिवर्सल चेक
+    // 🌟 मोबाइल और डेस्कटॉप दोनों ब्राउज़र्स के लिए यूनिवर्सल चेक
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (SpeechRecognition) {
@@ -455,13 +455,13 @@
         recognition.continuous = false;
         recognition.interimResults = false;
         
-        // 🌟 भाषा को पूरी तरह खाली छोड़ दिया है ताकि ब्राउज़र आपकी बोली हुई भाषा (Hindi या English) को खुद-ब-खुद डिटेक्ट करे
-        recognition.lang = '';  
+        // 🌟 नेचुरल भाषा डिटेक्शन के लिए बेस को 'hi-IN' रखा है जो हिंग्लिश और इंग्लिश दोनों को बिना क्रैश किए पकड़ता है
+        recognition.lang = 'hi-IN'; 
 
         recognition.onstart = () => {
             isRecording = true;
             const micBtn = document.getElementById("mic-button");
-            micBtn.classList.add("recording");
+            if (micBtn) micBtn.classList.add("recording");
             document.getElementById("user-input").placeholder = "🎙️ Listening...";
         };
         
@@ -484,13 +484,18 @@
         document.getElementById("user-input").placeholder = "Type or speak...";
     }
 
+    // 🌟 मोबाइल फ्रेंडली टच/क्लिक फंक्शन
     function toggleVoiceInput() {
         if (!recognition) return;
         if (isRecording) {
             recognition.stop();
         } else {
-            document.getElementById("user-input").value = "";
-            recognition.start();
+            // मोबाइल ब्राउज़र की सुरक्षा के लिए क्लिक इवेंट के तुरंत बाद बिना इनपुट हिलाए स्टार्ट करना आवश्यक है
+            try {
+                recognition.start();
+            } catch(e) {
+                console.log("Recognition already running:", e);
+            }
         }
     }
 
