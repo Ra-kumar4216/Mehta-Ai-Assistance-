@@ -1,50 +1,45 @@
 import os
 import base64
 import re
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
-from duckduckgo_search import DDGS
 
 app = Flask(__name__)
-CORS(app)  # Frontend से कनेक्ट करने के लिए
+CORS(app)  # Frontend से बिना किसी CORS एरर के कनेक्ट करने के लिए
 
 # Vercel पर सेट की हुई GEMINI_API_KEY को कॉन्फ़िगर करें
 api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
-# 🔥 आपका रियल-टाइम इंटरनेट सर्च फंक्शन
+# 🔥 Light-Weight & Direct Internet Search (No external duckduckgo library needed)
 def internet_search(query):
     if not query or len(query.strip()) < 2:
         return ""
     try:
-        with DDGS() as ddgs:
-            results = []
-            search_queries = [
-                query,
-                f"{query} 2026",
-                f"current {query}",
-                f"who is the current {query}",
-                f"{query} latest news"
-            ]
+        # सीधे DuckDuckGo के HTML एंडपॉइंट पर रिक्वेस्ट भेज रहे हैं जिससे Vercel क्रैश नहीं होगा
+        url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(query)}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            html = response.text
+            # HTML से सर्च रिज़ल्ट्स निकालने का आसान तरीका
+            links = re.findall(r'<a class="result__snippet"[\s\S]*?>([\s\S]*?)</a>', html)
+            titles = re.findall(r'<a class="result__url"[\s\S]*?>([\s\S]*?)</a>', html)
             
-            for q in search_queries:
-                try:
-                    res = list(ddgs.text(q, max_results=5))
-                    results.extend(res)
-                except:
-                    continue
-                    
-            if results:
-                unique_results = []
-                seen = set()
-                for r in results:
-                    title = r.get('title', '').strip()
-                    body = r.get('body', '').strip()
-                    if title and title not in seen and body:
-                        seen.add(title)
-                        unique_results.append(f"• {title}: {body}")
-                return "\n".join(unique_results[:8])
+            unique_results = []
+            for i in range(min(len(links), 5)):
+                clean_title = re.sub(r'<[^>]+>', '', titles[i]).strip()
+                clean_desc = re.sub(r'<[^>]+>', '', links[i]).strip()
+                if clean_title and clean_desc:
+                    unique_results.append(f"• {clean_title}: {clean_desc}")
+            
+            if unique_results:
+                return "\n".join(unique_results)
     except Exception as e:
         print(f"Search Error: {e}")
     
@@ -60,12 +55,12 @@ def chat():
         if not user_message and not image_data_url:
             return jsonify({"error": "Message or image required"}), 400
             
-        # 1. इंटरनेट सर्च चलाएं (अगर टेक्स्ट मैसेज है)
+        # 1. इंटरनेट सर्च चलाएं (अगर यूजर ने टेक्स्ट पूछा है)
         search_context = ""
         if user_message:
             search_context = internet_search(user_message)
             
-        # Gemini 2.5 Flash मॉडल लोड करें (यह फ़ास्ट है, विज़न और सर्च दोनों संभाल लेगा)
+        # Gemini 2.5 Flash मॉडल लोड करें (टेक्स्ट और विज़न दोनों के लिए बेस्ट)
         model = genai.GenerativeModel("gemini-2.5-flash")
         
         # सिस्टम इंस्ट्रक्शन और सर्च कॉन्टेक्स्ट तैयार करें
@@ -105,7 +100,6 @@ def chat():
         # Gemini API से रिस्पॉन्स जेनरेट करें
         response = model.generate_content(content_parts)
         
-        # रिस्पॉन्स में से थिंकिंग टैग्स (यदि हों) को साफ़ करें
         reply = response.text
         clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', reply).strip()
         
