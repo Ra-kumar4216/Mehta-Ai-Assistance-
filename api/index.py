@@ -1,24 +1,25 @@
+import os
+import base64
+import re
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os
-import requests
-import re
+import google.generativeai as genai
 from duckduckgo_search import DDGS
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Frontend से कनेक्ट करने के लिए
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+# Vercel पर सेट की हुई GEMINI_API_KEY को कॉन्फ़िगर करें
+api_key = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=api_key)
 
-# 🔥 Super Improved Real-Time Search
+# 🔥 आपका रियल-टाइम इंटरनेट सर्च फंक्शन
 def internet_search(query):
     if not query or len(query.strip()) < 2:
         return ""
     try:
         with DDGS() as ddgs:
             results = []
-            # Multiple strong queries
             search_queries = [
                 query,
                 f"{query} 2026",
@@ -49,76 +50,69 @@ def internet_search(query):
     
     return "No fresh internet data available right now."
 
-@app.route('/api/chat', methods=['POST'])
+@app.route("/api/chat", methods=["POST"])
 def chat():
-    data = request.json or {}
-    user_message = data.get("message", "").strip()
-    image_base64 = data.get("image", None)
-
-    if not user_message and not image_base64:
-        return jsonify({"error": "Message or image required"}), 400
-
-    # Strong Real-Time Search
-    search_context = internet_search(user_message)
-
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    # Very Strong Instruction for Real-Time Data
-    base_instruction = (
-        "You are Mehta AI, a highly accurate and updated assistant for 2026. "
-        "You MUST always use the latest real-time internet data provided in the context. "
-        "Never say 'no fresh data' or 'information not available' if any relevant information is present. "
-        "Give direct, confident, and clear answers using the provided search results. "
-        "Respond in the same language as the user."
-    )
-
-    if image_base64:
-        selected_model = "google/gemma-4-26b-a4b-it:free"
-        content = [{"type": "text", "text": user_message or "Is image ko detail mein analyze karo."}]
-        content.append({
-            "type": "image_url",
-            "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
-        })
-
-        messages = [
-            {"role": "system", "content": base_instruction},
-            {"role": "user", "content": content}
-        ]
-        if search_context:
-            messages.append({"role": "user", "content": f"[REAL-TIME INTERNET DATA - JUNE 2026]:\n{search_context}"})
-    else:
-        selected_model = "deepseek/deepseek-chat"
-        final_prompt = f"{base_instruction}\n\n[REAL-TIME INTERNET DATA - JUNE 2026]:\n{search_context}\n\nUser Question: {user_message}"
-
-        messages = [
-            {"role": "system", "content": base_instruction},
-            {"role": "user", "content": final_prompt}
-        ]
-
-    payload = {
-        "model": selected_model,
-        "messages": messages,
-        "temperature": 0.5,      # Lower temperature = more factual
-        "max_tokens": 2048
-    }
-
     try:
-        response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=90)
-        res_data = response.json()
-
-        if 'error' in res_data:
-            return jsonify({"reply": f"Error: {res_data['error'].get('message', 'Unknown')}"})
-
-        reply = res_data['choices'][0]['message']['content']
+        data = request.json or {}
+        user_message = data.get("message", "").strip()
+        image_data_url = data.get("image", None)  # Frontend से आने वाली Base64 इमेज
+        
+        if not user_message and not image_data_url:
+            return jsonify({"error": "Message or image required"}), 400
+            
+        # 1. इंटरनेट सर्च चलाएं (अगर टेक्स्ट मैसेज है)
+        search_context = ""
+        if user_message:
+            search_context = internet_search(user_message)
+            
+        # Gemini 2.5 Flash मॉडल लोड करें (यह फ़ास्ट है, विज़न और सर्च दोनों संभाल लेगा)
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        
+        # सिस्टम इंस्ट्रक्शन और सर्च कॉन्टेक्स्ट तैयार करें
+        base_instruction = (
+            "You are Mehta AI, a highly accurate and updated assistant for 2026. "
+            "You MUST always use the latest real-time internet data provided in the context. "
+            "Never say 'no fresh data' or 'information not available' if any relevant information is present. "
+            "Give direct, confident, and clear answers using the provided search results. "
+            "Respond in the same language as the user.\n\n"
+        )
+        
+        if search_context:
+            base_instruction += f"[REAL-TIME INTERNET DATA - JUNE 2026]:\n{search_context}\n\n"
+            
+        content_parts = []
+        
+        # सिस्टम प्रॉम्प्ट को सबसे पहले जोड़ें
+        content_parts.append(base_instruction)
+        
+        # 2. अगर यूज़र ने इमेज भेजी है, तो उसे बाइट्स में कन्वर्ट करके जोड़ें
+        if image_data_url and "," in image_data_url:
+            header, encoded = image_data_url.split(",", 1)
+            mime_type = header.split(";")[0].split(":")[1]
+            image_bytes = base64.b64decode(encoded)
+            
+            content_parts.append({
+                "mime_type": mime_type,
+                "data": image_bytes
+            })
+            
+        # 3. यूज़र का टेक्स्ट मैसेज जोड़ें
+        if user_message:
+            content_parts.append(f"User Question: {user_message}")
+        else:
+            content_parts.append("Is image ko detail mein analyze karo.")
+            
+        # Gemini API से रिस्पॉन्स जेनरेट करें
+        response = model.generate_content(content_parts)
+        
+        # रिस्पॉन्स में से थिंकिंग टैग्स (यदि हों) को साफ़ करें
+        reply = response.text
         clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', reply).strip()
+        
         return jsonify({"reply": clean_reply})
-
+        
     except Exception as e:
         return jsonify({"reply": f"Server Error: {str(e)}"}), 500
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
