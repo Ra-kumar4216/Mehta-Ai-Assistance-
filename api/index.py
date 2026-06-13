@@ -11,7 +11,6 @@ CORS(app)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# 🌐 Real-Time Web Search
 def internet_search(query):
     try:
         with DDGS() as ddgs:
@@ -22,11 +21,6 @@ def internet_search(query):
         pass
     return ""
 
-# Search Optimizer
-def optimize_search_query(user_msg):
-    # Simple fallback for free
-    return user_msg[:200] if user_msg else "latest news"
-
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.json or {}
@@ -36,29 +30,17 @@ def chat():
     if not user_message and not image_base64:
         return jsonify({"error": "Message or image required"}), 400
 
-    search_context = internet_search(user_message) if user_message else ""
-
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
 
-    base_instruction = (
-        "You are Mehta AI, a helpful and intelligent assistant. "
-        "Respond in the same language as the user. Be detailed and accurate."
-    )
+    base_instruction = "You are Mehta AI, a helpful assistant. Respond in the user's language."
 
-    # ==================== FREE VISION SETUP ====================
     if image_base64:
-        # Free Vision Model
-        selected_model = "google/gemma-4-31b-it:free"   # Best free vision right now
-        
-        content = []
-        
-        if user_message:
-            content.append({"type": "text", "text": user_message})
-        else:
-            content.append({"type": "text", "text": "Is image ko bahut detail mein analyze karo. Sab kuch describe karo."})
+        selected_model = "qwen/qwen2.5-vl-32b-instruct:free"   # ← Best working free vision
+
+        content = [{"type": "text", "text": user_message or "Is image ko detail mein analyze karo."}]
         
         content.append({
             "type": "image_url",
@@ -69,19 +51,11 @@ def chat():
             {"role": "system", "content": base_instruction},
             {"role": "user", "content": content}
         ]
-
-        if search_context:
-            messages.append({"role": "user", "content": f"[Live Internet Context]:\n{search_context}"})
-
     else:
-        # Normal Text Chat (Free Model)
-        selected_model = "deepseek/deepseek-chat"   # Ya "qwen/qwen2.5-coder-32b-instruct:free"
-        
-        final_prompt = f"{base_instruction}\n\n{search_context}\n\nUser: {user_message}"
-        
+        selected_model = "deepseek/deepseek-chat"
         messages = [
             {"role": "system", "content": base_instruction},
-            {"role": "user", "content": final_prompt}
+            {"role": "user", "content": f"{user_message}\n\nSearch context: {internet_search(user_message)}"}
         ]
 
     payload = {
@@ -92,20 +66,19 @@ def chat():
     }
 
     try:
-        response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=60)
+        response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=90)
         res_data = response.json()
 
+        # Better Error Logging
         if 'error' in res_data:
-            return jsonify({"reply": f"Error: {res_data['error'].get('message', 'Unknown error')}"})
+            error_detail = res_data['error']
+            print("OpenRouter Error:", error_detail)  # ← Yeh Vercel logs mein dikhega
+            return jsonify({"reply": f"Error: {error_detail.get('message', str(error_detail))}"})
 
         reply = res_data['choices'][0]['message']['content']
         clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', reply).strip()
-        
         return jsonify({"reply": clean_reply})
 
     except Exception as e:
-        return jsonify({"reply": f"Backend Error: {str(e)}"}), 500
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+        print("Backend Exception:", str(e))
+        return jsonify({"reply": "Server error, thodi der baad try karo."}), 500
