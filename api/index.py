@@ -11,19 +11,25 @@ CORS(app)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# 🔥 Improved Real-Time Search
+# 🔥 Super Improved Real-Time Search
 def internet_search(query):
     if not query or len(query.strip()) < 2:
         return ""
     try:
         with DDGS() as ddgs:
-            # Better results ke liye multiple queries try kar rahe hain
             results = []
-            queries = [query, f"{query} 2026", f"current {query}"]
+            # Multiple strong queries
+            search_queries = [
+                query,
+                f"{query} 2026",
+                f"current {query}",
+                f"who is the current {query}",
+                f"{query} latest news"
+            ]
             
-            for q in queries:
+            for q in search_queries:
                 try:
-                    res = list(ddgs.text(q, max_results=4))
+                    res = list(ddgs.text(q, max_results=5))
                     results.extend(res)
                 except:
                     continue
@@ -32,11 +38,12 @@ def internet_search(query):
                 unique_results = []
                 seen = set()
                 for r in results:
-                    title = r.get('title', '')
-                    if title and title not in seen:
+                    title = r.get('title', '').strip()
+                    body = r.get('body', '').strip()
+                    if title and title not in seen and body:
                         seen.add(title)
-                        unique_results.append(f"- {title}: {r.get('body', '')}")
-                return "\n".join(unique_results[:6])
+                        unique_results.append(f"• {title}: {body}")
+                return "\n".join(unique_results[:8])
     except Exception as e:
         print(f"Search Error: {e}")
     
@@ -59,11 +66,12 @@ def chat():
         "Content-Type": "application/json"
     }
 
+    # Very Strong Instruction for Real-Time Data
     base_instruction = (
-        "You are Mehta AI, a highly accurate assistant for 2026. "
-        "Always use the latest real-time data provided in the context. "
-        "Never say 'no fresh data' if any information is available. "
-        "If data is available, give direct and confident answer. "
+        "You are Mehta AI, a highly accurate and updated assistant for 2026. "
+        "You MUST always use the latest real-time internet data provided in the context. "
+        "Never say 'no fresh data' or 'information not available' if any relevant information is present. "
+        "Give direct, confident, and clear answers using the provided search results. "
         "Respond in the same language as the user."
     )
 
@@ -80,10 +88,10 @@ def chat():
             {"role": "user", "content": content}
         ]
         if search_context:
-            messages.append({"role": "user", "content": f"[REAL-TIME INTERNET DATA 2026]:\n{search_context}"})
+            messages.append({"role": "user", "content": f"[REAL-TIME INTERNET DATA - JUNE 2026]:\n{search_context}"})
     else:
         selected_model = "deepseek/deepseek-chat"
-        final_prompt = f"{base_instruction}\n\n[LIVE REAL-TIME DATA 2026]:\n{search_context}\n\nQuestion: {user_message}"
+        final_prompt = f"{base_instruction}\n\n[REAL-TIME INTERNET DATA - JUNE 2026]:\n{search_context}\n\nUser Question: {user_message}"
 
         messages = [
             {"role": "system", "content": base_instruction},
@@ -93,7 +101,7 @@ def chat():
     payload = {
         "model": selected_model,
         "messages": messages,
-        "temperature": 0.6,
+        "temperature": 0.5,      # Lower temperature = more factual
         "max_tokens": 2048
     }
 
