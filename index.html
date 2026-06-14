@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Mehta AI · Intelligent Assistant</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -37,6 +38,7 @@
             background: radial-gradient(ellipse at 30% 40%, #1e293b 0%, #0a0f1c 100%);
             color: var(--text-light);
             display: flex;
+            flex-direction: column; /* बटन और कंटेनर को व्यवस्थित रखने के लिए बदला */
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -44,11 +46,53 @@
             margin: 0;
         }
 
+        /* 🌟 Google Login Section का सुंदर CSS स्टाइल */
+        .login-wrapper {
+            width: 100%;
+            max-width: 520px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 0 10px;
+        }
+
+        .google-btn {
+            background: #ffffff;
+            color: #1f2937;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.2s ease;
+        }
+
+        .google-btn:hover {
+            background: #f3f4f6;
+            transform: translateY(-1px);
+        }
+
+        .welcome-text {
+            color: #f1f5f9;
+            font-size: 0.95rem;
+            font-weight: 500;
+            background: rgba(255,255,255,0.06);
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
         /* main container – glassmorphic card */
         .chat-container {
             width: 100%;
             max-width: 520px;
-            height: 85vh;
+            height: 80vh;
             max-height: 780px;
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
@@ -414,6 +458,15 @@
     </style>
 </head>
 <body>
+
+<div class="login-wrapper">
+    <div id="user-display" class="welcome-text" style="display: none;">Checking Auth...</div>
+    <button id="google-login-btn" class="google-btn">
+        <svg style="width:16px; height:16px;" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.65 1.39 7.5l3.86 3C6.16 7.55 8.84 5.04 12 5.04z"/><path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.42h6.46c-.28 1.47-1.11 2.71-2.36 3.55l3.66 2.84c2.14-1.97 3.39-4.88 3.39-8.47z"/><path fill="#FBBC05" d="M5.25 14.75c-.25-.76-.39-1.57-.39-2.42s.14-1.66.39-2.42L1.39 7.5C.5 9.3 0 11.3 0 13.43s.5 4.13 1.39 5.93l3.86-3.01z"/><path fill="#34A853" d="M12 23c3.24 0 5.97-1.08 7.96-2.92l-3.66-2.84c-1.01.67-2.32 1.08-4.3 1.08-3.16 0-5.84-2.51-6.79-5.46L1.39 15.87C3.37 19.72 7.35 23 12 23z"/></svg>
+        Sign in with Google
+    </button>
+</div>
+
 <div class="chat-container">
     <div class="chat-header">
         <span class="status-dot"></span>
@@ -441,21 +494,56 @@
 </div>
 
 <script>
+    // 🌟 Supabase Initialization (यह आपकी वर्सेल साइट के यूआरएल के साथ ऑटो-कनेक्टेड रहेगा)
+    const supabaseUrl = "https://wrnzwubsaxiizxeppmac.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indybnp3dWJzYXhpaXp4ZXBwbWFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMDU4MDYsImV4cCI6MjA1Nzg4MTgwNn0.6U5UfQ-T_u7O6ZcW_P9U4Q5Z_H9_T59O-4-M5W_O5M4"; // आपकी Anon Key जोड़ी गई
+    const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    let loggedInUserId = "default_user"; // डिफ़ॉल्ट आईडी
+
+    // 🌟 Google Login बटन पर क्लिक करने का इवेंट लॉजिक
+    document.getElementById('google-login-btn').addEventListener('click', async () => {
+        const { error } = await _supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
+        if (error) console.error("Login Error:", error.message);
+    });
+
+    // 🌟 यूज़र लॉगिन स्टेटस चेक करने का नया फंक्शन
+    async function checkUserAuth() {
+        const { data: { user } } = await _supabase.auth.getUser();
+        const loginBtn = document.getElementById('google-login-btn');
+        const userDisplay = document.getElementById('user-display');
+        
+        if (user) {
+            loginBtn.style.display = 'none';
+            userDisplay.style.display = 'block';
+            // यूज़र का नाम या ईमेल दिखाएं
+            userDisplay.innerText = `👋 Welcome, ${user.user_metadata.full_name || user.email}`;
+            // असली यूनिक गूगल आईडी सेट करें जो बैकएंड डेटाबेस में जाएगी
+            loggedInUserId = user.email; 
+        } else {
+            loginBtn.style.display = 'flex';
+            userDisplay.style.display = 'none';
+        }
+    }
+    checkUserAuth();
+
     // ---------- state ----------
     let selectedBase64Image = null;
     let recognition = null;
     let isRecording = false;
     let currentAssistantReplyRaw = "";
 
-    // 🌟 मोबाइल और डेस्कटॉप दोनों ब्राउज़र्स के लिए यूनिवर्सल चेक
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
-        
-        // 🌟 नेचुरल भाषा डिटेक्शन के लिए बेस को 'hi-IN' रखा है जो हिंग्लिश और इंग्लिश दोनों को बिना क्रैश किए पकड़ता है
         recognition.lang = 'hi-IN'; 
 
         recognition.onstart = () => {
@@ -484,13 +572,11 @@
         document.getElementById("user-input").placeholder = "Type or speak...";
     }
 
-    // 🌟 मोबाइल फ्रेंडली टच/क्लिक फंक्शन
     function toggleVoiceInput() {
         if (!recognition) return;
         if (isRecording) {
             recognition.stop();
         } else {
-            // मोबाइल ब्राउज़र की सुरक्षा के लिए क्लिक इवेंट के तुरंत बाद बिना इनपुट हिलाए स्टार्ट करना आवश्यक है
             try {
                 recognition.start();
             } catch(e) {
@@ -617,10 +703,15 @@
         chatBox.scrollTop = chatBox.scrollHeight;
 
         try {
+            // 🌟 यहाँ body के अंदर 'user_id' को आपकी असली loggedInUserId (Email) के साथ भेजा जा रहा है
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: messageText, image: imagePayload })
+                body: JSON.stringify({ 
+                    message: messageText, 
+                    image: imagePayload,
+                    user_id: loggedInUserId 
+                })
             });
             const data = await response.json();
             const replyText = data.reply || data.error || "I'm here, but response format unexpected. Try again!";
