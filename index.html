@@ -501,6 +501,23 @@
 
     let loggedInUserId = "default_user"; // डिफ़ॉल्ट आईडी
 
+    // 🌟 UI अपडेट करने का स्मार्ट फंक्शन जो बटन छुपाएगा और ईमेल आईडी सिंक करेगा
+    function updateLoginUI(user) {
+        const loginBtn = document.getElementById('google-login-btn');
+        const userDisplay = document.getElementById('user-display');
+        
+        if (user) {
+            loginBtn.style.display = 'none';
+            userDisplay.style.display = 'block';
+            userDisplay.innerText = `👋 Welcome, ${user.user_metadata.full_name || user.email}`;
+            loggedInUserId = user.email; // बैकएंड डेटाबेस में भेजने के लिए सेट किया
+        } else {
+            loginBtn.style.display = 'flex';
+            userDisplay.style.display = 'none';
+            loggedInUserId = "default_user";
+        }
+    }
+
     // 🌟 Google Login बटन इवेंट
     document.getElementById('google-login-btn').addEventListener('click', async () => {
         const { error } = await _supabase.auth.signInWithOAuth({
@@ -512,23 +529,18 @@
         if (error) console.error("Login Error:", error.message);
     });
 
-    // 🌟 स्मार्ट ऑन-ऑथ-स्टेट-चेंज इवेंट लिस्नर जो यूआरएल टोकन को रीयल-टाइम में लोड करेगा
-    _supabase.auth.onAuthStateChange(async (event, session) => {
-        const loginBtn = document.getElementById('google-login-btn');
-        const userDisplay = document.getElementById('user-display');
-        
+    // 🌟 सुपाबेस को यूआरएल टोकन रीड करने के लिए 1.5 सेकंड का स्मार्ट डिले दिया
+    setTimeout(async () => {
+        const { data: { user } } = await _supabase.auth.getUser();
+        updateLoginUI(user);
+    }, 1500);
+
+    // रियल-टाइम ऑथेंटिकेशन स्टेट चेंज लिस्नर
+    _supabase.auth.onAuthStateChange((event, session) => {
         if (session && session.user) {
-            const user = session.user;
-            loginBtn.style.display = 'none';
-            userDisplay.style.display = 'block';
-            userDisplay.innerText = `👋 Welcome, ${user.user_metadata.full_name || user.email}`;
-            
-            // अब बैकएंड डेटाबेस में यह असली ईमेल आईडी जाएगी
-            loggedInUserId = user.email; 
+            updateLoginUI(session.user);
         } else {
-            loginBtn.style.display = 'flex';
-            userDisplay.style.display = 'none';
-            loggedInUserId = "default_user";
+            updateLoginUI(null);
         }
     });
 
