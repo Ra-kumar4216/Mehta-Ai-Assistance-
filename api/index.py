@@ -124,6 +124,10 @@ def chat():
         response = model.generate_content(content_parts)
         clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', response.text).strip()
         
+        # 🌟 BACKUP RECOVERY: वर्सेल (Vercel) के लॉग्स में हमेशा के लिए सेव करने के लिए
+        # अगर सुपाबेस बंद भी हो जाए, तो भी यहाँ से चैट रिकवर हो जाएगी
+        print(f"BACKUP LOG - User: {user_id} | Client Msg: {user_message} | AI Reply: {clean_reply}")
+        
         # Save chat history securely to Supabase Database before returning response
         try:
             supabase.table("chat_history").insert({
