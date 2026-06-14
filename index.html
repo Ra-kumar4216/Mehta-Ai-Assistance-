@@ -13,9 +13,6 @@
             padding: 0;
         }
 
-        /* ------------------------------
-           DESIGN SYSTEM & VARIABLES
-        -------------------------------- */
         :root {
             --primary: #2563eb;
             --primary-glow: #3b82f6;
@@ -38,7 +35,7 @@
             background: radial-gradient(ellipse at 30% 40%, #1e293b 0%, #0a0f1c 100%);
             color: var(--text-light);
             display: flex;
-            flex-direction: column; /* बटन और कंटेनर को व्यवस्थित रखने के लिए बदला */
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -46,7 +43,6 @@
             margin: 0;
         }
 
-        /* 🌟 Google Login Section का सुंदर CSS स्टाइल */
         .login-wrapper {
             width: 100%;
             max-width: 520px;
@@ -88,7 +84,6 @@
             border: 1px solid rgba(255,255,255,0.05);
         }
 
-        /* main container – glassmorphic card */
         .chat-container {
             width: 100%;
             max-width: 520px;
@@ -110,7 +105,6 @@
             box-shadow: 0 30px 55px -15px rgba(0, 0, 0, 0.6);
         }
 
-        /* header with live indicator */
         .chat-header {
             background: rgba(37, 99, 235, 0.12);
             padding: 18px 20px;
@@ -142,7 +136,6 @@
             100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
-        /* scrollable messages area */
         .chat-messages {
             flex: 1;
             padding: 22px 18px;
@@ -153,12 +146,10 @@
             scroll-behavior: smooth;
         }
 
-        /* custom scrollbar */
         .chat-messages::-webkit-scrollbar { width: 5px; }
         .chat-messages::-webkit-scrollbar-track { background: transparent; }
         .chat-messages::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 20px; }
 
-        /* message bubble + animations */
         .message {
             max-width: 82%;
             padding: 12px 18px;
@@ -182,7 +173,6 @@
             }
         }
 
-        /* reduced motion support */
         @media (prefers-reduced-motion: reduce) {
             .message {
                 animation: none;
@@ -210,7 +200,6 @@
             padding-bottom: 40px;
         }
 
-        /* code block styling */
         .code-container {
             position: relative;
             margin: 12px 0 8px;
@@ -255,7 +244,6 @@
             transform: scale(0.96);
         }
 
-        /* bot action buttons */
         .bot-actions {
             position: absolute;
             bottom: 8px;
@@ -285,7 +273,6 @@
             border-color: #3b82f6;
         }
 
-        /* image preview inside message */
         .chat-image {
             max-width: 180px;
             max-height: 180px;
@@ -299,7 +286,6 @@
             transform: scale(1.02);
         }
 
-        /* preview attachment row */
         .preview-container {
             display: none;
             padding: 10px 20px;
@@ -332,7 +318,6 @@
             transform: scale(1.05);
         }
 
-        /* input area */
         .chat-input-area {
             display: flex;
             padding: 14px 18px 18px;
@@ -411,7 +396,6 @@
             box-shadow: 0 10px 20px -5px #1e3a8a80;
         }
 
-        /* thinking dots animation */
         .thinking-dots::after {
             content: '...';
             display: inline-block;
@@ -426,7 +410,6 @@
             100% { opacity: 0.3; content: '.'; }
         }
 
-        /* scroll to bottom button (new micro-interaction) */
         .scroll-to-bottom {
             position: absolute;
             bottom: 90px;
@@ -455,16 +438,36 @@
             from { opacity: 0; transform: translateY(8px);}
             to { opacity: 1; transform: translateY(0);}
         }
+
+        /* 🌟 clear chat button (naya add kiya) */
+        .clear-btn {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-muted);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .clear-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+            color: white;
+            border-color: #ef4444;
+        }
     </style>
 </head>
 <body>
 
 <div class="login-wrapper">
     <div id="user-display" class="welcome-text" style="display: none;">Checking Auth...</div>
-    <button id="google-login-btn" class="google-btn">
-        <svg style="width:16px; height:16px;" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.65 1.39 7.5l3.86 3C6.16 7.55 8.84 5.04 12 5.04z"/><path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.42h6.46c-.28 1.47-1.11 2.71-2.36 3.55l3.66 2.84c2.14-1.97 3.39-4.88 3.39-8.47z"/><path fill="#FBBC05" d="M5.25 14.75c-.25-.76-.39-1.57-.39-2.42s.14-1.66.39-2.42L1.39 7.5C.5 9.3 0 11.3 0 13.43s.5 4.13 1.39 5.93l3.86-3.01z"/><path fill="#34A853" d="M12 23c3.24 0 5.97-1.08 7.96-2.92l-3.66-2.84c-1.01.67-2.32 1.08-4.3 1.08-3.16 0-5.84-2.51-6.79-5.46L1.39 15.87C3.37 19.72 7.35 23 12 23z"/></svg>
-        Sign in with Google
-    </button>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <button id="clear-chat-btn" class="clear-btn" onclick="clearChatHistory()">🗑️ Clear Chat</button>
+        <button id="google-login-btn" class="google-btn">
+            <svg style="width:16px; height:16px;" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.65 1.39 7.5l3.86 3C6.16 7.55 8.84 5.04 12 5.04z"/><path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.42h6.46c-.28 1.47-1.11 2.71-2.36 3.55l3.66 2.84c2.14-1.97 3.39-4.88 3.39-8.47z"/><path fill="#FBBC05" d="M5.25 14.75c-.25-.76-.39-1.57-.39-2.42s.14-1.66.39-2.42L1.39 7.5C.5 9.3 0 11.3 0 13.43s.5 4.13 1.39 5.93l3.86-3.01z"/><path fill="#34A853" d="M12 23c3.24 0 5.97-1.08 7.96-2.92l-3.66-2.84c-1.01.67-2.32 1.08-4.3 1.08-3.16 0-5.84-2.51-6.79-5.46L1.39 15.87C3.37 19.72 7.35 23 12 23z"/></svg>
+            Sign in with Google
+        </button>
+    </div>
 </div>
 
 <div class="chat-container">
@@ -533,6 +536,8 @@
     setTimeout(async () => {
         const { data: { user } } = await _supabase.auth.getUser();
         updateLoginUI(user);
+        // login state ke baad us user ki saved history load karo
+        loadChatHistory();
     }, 1500);
 
     // रियल-टाइम ऑथेंटिकेशन स्टेट चेंज लिस्नर
@@ -549,6 +554,11 @@
     let recognition = null;
     let isRecording = false;
     let currentAssistantReplyRaw = "";
+
+    // 🌟 chat history ka storage key (har user ke liye alag)
+    function getStorageKey() {
+        return "mehta_chat_history_" + (loggedInUserId || "default_user");
+    }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -679,6 +689,69 @@
         botDivElement.appendChild(actionsDiv);
     }
 
+    // ============================================================
+    // 🌟 CHAT HISTORY (localStorage) — naya add kiya gaya hai
+    // ============================================================
+
+    function saveMessageToHistory(sender, text, image = null) {
+        let history = [];
+        try {
+            history = JSON.parse(localStorage.getItem(getStorageKey())) || [];
+        } catch (e) {
+            history = [];
+        }
+        history.push({ sender, text, image });
+        if (history.length > 100) history = history.slice(-100); // sirf last 100 messages
+        localStorage.setItem(getStorageKey(), JSON.stringify(history));
+    }
+
+    function loadChatHistory() {
+        let history = [];
+        try {
+            history = JSON.parse(localStorage.getItem(getStorageKey())) || [];
+        } catch (e) {
+            history = [];
+        }
+        if (history.length === 0) return; // welcome message wahi rehne do
+
+        chatBox.innerHTML = "";
+        history.forEach(item => {
+            if (item.sender === "user") {
+                const userDiv = document.createElement("div");
+                userDiv.className = "message user";
+                if (item.image) {
+                    const imgElem = document.createElement("img");
+                    imgElem.src = `data:image/jpeg;base64,${item.image}`;
+                    imgElem.className = "chat-image";
+                    imgElem.alt = "user attached";
+                    userDiv.appendChild(imgElem);
+                }
+                if (item.text) {
+                    const textSpan = document.createElement("span");
+                    textSpan.innerText = item.text;
+                    userDiv.appendChild(textSpan);
+                }
+                chatBox.appendChild(userDiv);
+            } else {
+                const botDiv = document.createElement("div");
+                botDiv.className = "message bot";
+                chatBox.appendChild(botDiv);
+                renderMarkdownWithActions(item.text, botDiv);
+            }
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function clearChatHistory() {
+        if (!confirm("Pura chat history delete karna hai?")) return;
+        localStorage.removeItem(getStorageKey());
+        chatBox.innerHTML = '<div class="message bot">✨ Hello! I\'m Mehta, your intelligent assistant. Ask me anything, share images, or use voice — I\'m here to help.</div>';
+    }
+
+    // ============================================================
+    // SEND MESSAGE — real backend, fake fallback hata diya gaya hai
+    // ============================================================
+
     async function sendMessage() {
         const inputField = document.getElementById("user-input");
         const messageText = inputField.value.trim();
@@ -705,6 +778,9 @@
         chatBox.scrollTop = chatBox.scrollHeight;
         checkScrollVisibility();
 
+        // 🌟 user ka message history me save karo
+        saveMessageToHistory("user", messageText, imagePayload);
+
         const botDiv = document.createElement("div");
         botDiv.className = "message bot";
         const thinkingSpan = document.createElement("span");
@@ -725,21 +801,22 @@
                 })
             });
             const data = await response.json();
-            const replyText = data.reply || data.error || "I'm here, but response format unexpected. Try again!";
             botDiv.innerHTML = "";
-            renderMarkdownWithActions(replyText, botDiv);
-        } catch (error) {
-            console.warn("API error, using smart fallback response", error);
-            let fallbackReply = "✨ I'm Mehta, your AI companion. I can answer questions, explain code, or help brainstorm. (API endpoint not reached – but design & animations fully working!)";
-            if (messageText.toLowerCase().includes("hello") || messageText.toLowerCase().includes("hi")) {
-                fallbackReply = "👋 Hello! I'm delighted to assist you. Feel free to ask me anything, attach an image, or even dictate using 🎙️.";
-            } else if (imagePayload) {
-                fallbackReply = "🖼️ Thanks for sharing the image! I'd process it via vision models. In this demo, imagine me describing it brilliantly. Upload and let's discuss!";
-            } else if (messageText) {
-                fallbackReply = `📌 You asked: "${messageText.substring(0, 80)}". As Mehta AI, I can help with tech, writing, coding tips, and more. Try asking for a code snippet or creative idea!`;
+
+            if (!response.ok) {
+                // 🌟 REAL backend error dikhao — fake reply nahi
+                const errMsg = data.error || data.reply || "Server error aaya, dobara try karo.";
+                botDiv.innerHTML = `<span style="color:#fca5a5;">⚠️ ${errMsg}</span>`;
+            } else {
+                const replyText = data.reply || "I'm here, but response format unexpected. Try again!";
+                renderMarkdownWithActions(replyText, botDiv);
+                // 🌟 bot ka reply history me save karo
+                saveMessageToHistory("bot", replyText);
             }
-            botDiv.innerHTML = "";
-            renderMarkdownWithActions(fallbackReply, botDiv);
+        } catch (error) {
+            // 🌟 network/connection error — fake demo reply ki jagah real message
+            console.warn("Network/API error:", error);
+            botDiv.innerHTML = `<span style="color:#fca5a5;">⚠️ Network error: server tak pahunch nahi paaya. Internet check karo ya thodi der baad try karo.</span>`;
         }
         chatBox.scrollTop = chatBox.scrollHeight;
         checkScrollVisibility();
@@ -751,6 +828,7 @@
     });
     observer.observe(chatBox, { childList: true, subtree: true });
     window.onload = () => {
+        loadChatHistory();
         chatBox.scrollTop = chatBox.scrollHeight;
         checkScrollVisibility();
     };
