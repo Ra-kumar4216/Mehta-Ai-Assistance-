@@ -5,12 +5,19 @@ import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
+from supabase import create_client, Client
 
 app = Flask(__name__)
 CORS(app)
 
+# API Keys Configuration
 api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
+
+# Supabase Configuration (Automatically fetches variables from Vercel)
+supabase_url = os.getenv("SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+supabase: Client = create_client(supabase_url, supabase_key)
 
 def internet_search(query):
     if not query or len(query.strip()) < 2:
@@ -44,7 +51,7 @@ def chat():
         user_message = data.get("message", "").strip()
         image_data_url = data.get("image", None)
         
-        # 🌟 फ्रंटएंड अगर पुराने OpenRouter फॉर्मेट (payload) में डेटा भेज रहा हो, तो उसे यहाँ निकालें:
+        # Extract data if frontend sends payload in old OpenRouter format
         if not user_message and "messages" in data:
             messages = data.get("messages", [])
             for msg in messages:
@@ -63,7 +70,7 @@ def chat():
             return jsonify({"error": "Message or image required"}), 400
             
         search_context = ""
-        # अगर इमेज है तो इंटरनेट पर सर्च मत करो ताकि कन्फ्यूजन न हो
+        # Do not search internet if image is attached to avoid confusion
         if user_message and not image_data_url:
             search_context = internet_search(user_message)
             
@@ -81,7 +88,7 @@ def chat():
         
         content_parts = []
         
-        # 🌟 इमेज यूआरएल में से बेस64 डेटा साफ़ करके बाइट्स निकालना
+        # Clean Base64 data from Image URL and extract bytes
         if image_data_url:
             if "base64," in image_data_url:
                 header, encoded = image_data_url.split("base64,", 1)
@@ -91,7 +98,7 @@ def chat():
                 mime_type = "image/jpeg"
                 
             try:
-                # एक्स्ट्रा स्पेस हटाकर डिकोड करना
+                # Remove extra spaces and decode
                 image_bytes = base64.b64decode(encoded.strip())
                 content_parts.append({
                     "mime_type": mime_type,
@@ -105,11 +112,21 @@ def chat():
         elif user_message:
             content_parts.append(user_message)
         else:
-            content_parts.append("इस इमेज को ध्यान से देखो और बताओ ये कौन है या क्या है।")
+            content_parts.append("Look at this image carefully and tell me who or what is inside it.")
             
         response = model.generate_content(content_parts)
         clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', response.text).strip()
         
+        # Save chat history securely to Supabase Database before returning response
+        try:
+            supabase.table("chat_history").insert({
+                "user_id": "default_user",
+                "message": user_message if user_message else "[Image Sent]",
+                "reply": clean_reply
+            }).execute()
+        except Exception as db_err:
+            print(f"Database Save Error: {db_err}")
+            
         return jsonify({"reply": clean_reply})
         
     except Exception as e:
