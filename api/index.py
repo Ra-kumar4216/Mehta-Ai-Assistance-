@@ -51,7 +51,7 @@ def chat():
         user_message = data.get("message", "").strip()
         image_data_url = data.get("image", None)
         
-        # 🌟 फ्रंटएंड से आ रही रियल Google ID/Email को पकड़ने के लिए यहाँ बदलाव किया गया है
+        # 🌟 फ्रंटएंड से आ रही रियल Google ID/Email
         user_id = data.get("user_id", "default_user")
         
         # Extract data if frontend sends payload in old OpenRouter format
@@ -77,11 +77,15 @@ def chat():
         if user_message and not image_data_url:
             search_context = internet_search(user_message)
             
+        # 🌟 यहाँ भाषा की सेटिंग को पूरी तरह से डायनामिक और स्मार्ट बना दिया गया है
         base_instruction = (
             "You are Mehta AI, a highly accurate and updated assistant for 2026. "
             "Your top priority is to look at the attached image carefully and identify the people or things inside it. "
             "Do NOT talk about Narendra Modi unless he is actually visible in the image. "
-            "Respond directly, naturally, and clearly in Hindi/the user's language."
+            "CRITICAL LANGUAGE RULE: Always respond in the exact same language used by the user. "
+            "If the user interacts or asks a question in English, you must respond purely and fluently in English. "
+            "If the user interacts in Hindi or Hinglish, respond naturally in Hindi/Hinglish. "
+            "Ensure English-speaking users face absolutely no language barriers or forced translation."
         )
         
         model = genai.GenerativeModel(
@@ -122,7 +126,6 @@ def chat():
         
         # Save chat history securely to Supabase Database before returning response
         try:
-            # 🌟 "user_id": "default_user" को बदलकर अब डायनामिक user_id पास कर दिया है
             supabase.table("chat_history").insert({
                 "user_id": user_id,
                 "message": user_message if user_message else "[Image Sent]",
