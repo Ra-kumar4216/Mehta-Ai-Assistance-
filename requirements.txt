@@ -2,3 +2,4 @@ google-generativeai
 flask
 flask-cors
 requests
+supabase
