@@ -494,14 +494,14 @@
 </div>
 
 <script>
-    // 🌟 Supabase Initialization (यह आपकी वर्सेल साइट के यूआरएल के साथ ऑटो-कनेक्टेड रहेगा)
+    // 🌟 Supabase Initialization
     const supabaseUrl = "https://wrnzwubsaxiizxeppmac.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indybnp3dWJzYXhpaXp4ZXBwbWFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMDU4MDYsImV4cCI6MjA1Nzg4MTgwNn0.6U5UfQ-T_u7O6ZcW_P9U4Q5Z_H9_T59O-4-M5W_O5M4"; // आपकी Anon Key जोड़ी गई
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indybnp3dWJzYXhpaXp4ZXBwbWFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMDU4MDYsImV4cCI6MjA1Nzg4MTgwNn0.6U5UfQ-T_u7O6ZcW_P9U4Q5Z_H9_T59O-4-M5W_O5M4"; 
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
     let loggedInUserId = "default_user"; // डिफ़ॉल्ट आईडी
 
-    // 🌟 Google Login बटन पर क्लिक करने का इवेंट लॉजिक
+    // 🌟 Google Login बटन इवेंट
     document.getElementById('google-login-btn').addEventListener('click', async () => {
         const { error } = await _supabase.auth.signInWithOAuth({
             provider: 'google',
@@ -512,25 +512,25 @@
         if (error) console.error("Login Error:", error.message);
     });
 
-    // 🌟 यूज़र लॉगिन स्टेटस चेक करने का नया फंक्शन
-    async function checkUserAuth() {
-        const { data: { user } } = await _supabase.auth.getUser();
+    // 🌟 स्मार्ट ऑन-ऑथ-स्टेट-चेंज इवेंट लिस्नर जो यूआरएल टोकन को रीयल-टाइम में लोड करेगा
+    _supabase.auth.onAuthStateChange(async (event, session) => {
         const loginBtn = document.getElementById('google-login-btn');
         const userDisplay = document.getElementById('user-display');
         
-        if (user) {
+        if (session && session.user) {
+            const user = session.user;
             loginBtn.style.display = 'none';
             userDisplay.style.display = 'block';
-            // यूज़र का नाम या ईमेल दिखाएं
             userDisplay.innerText = `👋 Welcome, ${user.user_metadata.full_name || user.email}`;
-            // असली यूनिक गूगल आईडी सेट करें जो बैकएंड डेटाबेस में जाएगी
+            
+            // अब बैकएंड डेटाबेस में यह असली ईमेल आईडी जाएगी
             loggedInUserId = user.email; 
         } else {
             loginBtn.style.display = 'flex';
             userDisplay.style.display = 'none';
+            loggedInUserId = "default_user";
         }
-    }
-    checkUserAuth();
+    });
 
     // ---------- state ----------
     let selectedBase64Image = null;
@@ -703,7 +703,6 @@
         chatBox.scrollTop = chatBox.scrollHeight;
 
         try {
-            // 🌟 यहाँ body के अंदर 'user_id' को आपकी असली loggedInUserId (Email) के साथ भेजा जा रहा है
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
