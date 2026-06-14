@@ -51,6 +51,9 @@ def chat():
         user_message = data.get("message", "").strip()
         image_data_url = data.get("image", None)
         
+        # 🌟 फ्रंटएंड से आ रही रियल Google ID/Email को पकड़ने के लिए यहाँ बदलाव किया गया है
+        user_id = data.get("user_id", "default_user")
+        
         # Extract data if frontend sends payload in old OpenRouter format
         if not user_message and "messages" in data:
             messages = data.get("messages", [])
@@ -119,8 +122,9 @@ def chat():
         
         # Save chat history securely to Supabase Database before returning response
         try:
+            # 🌟 "user_id": "default_user" को बदलकर अब डायनामिक user_id पास कर दिया है
             supabase.table("chat_history").insert({
-                "user_id": "default_user",
+                "user_id": user_id,
                 "message": user_message if user_message else "[Image Sent]",
                 "reply": clean_reply
             }).execute()
