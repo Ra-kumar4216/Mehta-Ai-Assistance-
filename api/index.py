@@ -3,7 +3,7 @@ import base64
 import re
 import requests
 import datetime  
-import random  # 🌟 Naya import: API keys rotate karne ke liye
+import random  
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
@@ -16,7 +16,7 @@ CORS(app)
 api_key = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=api_key)
 
-# Supabase Configuration (Automatically fetches variables from Vercel)
+# Supabase Configuration
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 supabase: Client = create_client(supabase_url, supabase_key)
@@ -52,7 +52,6 @@ def chat():
         data = request.json or {}
         user_message = data.get("message", "").strip()
         image_data_url = data.get("image", None)
-        
         user_id = data.get("user_id", "default_user")
         
         if not user_message and "messages" in data:
@@ -73,16 +72,12 @@ def chat():
             return jsonify({"error": "Message or image required"}), 400
 
         # ==============================================================
-        # 🌟 NEW FEATURE 1: SMART DAILY LIMIT (40 Texts, Owner Unlimited)
+        # 🌟 FEATURE 1: SMART DAILY LIMIT
         # ==============================================================
-        ADMIN_EMAIL = "ratankumarmetha@gmail.com"  # Aapke liye koi limit nahi
-        
+        ADMIN_EMAIL = "ratankumarmetha@gmail.com"  
         if user_id != ADMIN_EMAIL:
             try:
-                # Aaj ki date nikalenge (UTC format me)
                 today_start = datetime.datetime.utcnow().date().isoformat()
-                
-                # Supabase se check karega ki is user ne aaj kitne messages bheje
                 user_chats = supabase.table("chat_history") \
                     .select("id") \
                     .eq("user_id", user_id) \
@@ -95,25 +90,47 @@ def chat():
                 print(f"Limit Check Error: {limit_err}")
 
         # ==============================================================
-        # 🌟 NEW FEATURE 2: API KEY ROTATION (Limit badhane ke liye)
+        # 🌟 FEATURE 2: API KEY ROTATION
         # ==============================================================
         api_keys = [
             os.getenv("GEMINI_API_KEY"),
             os.getenv("GEMINI_API_KEY_2"),
             os.getenv("GEMINI_API_KEY_3")
         ]
-        # Jo Keys Vercel me maujood hongi, sirf unme se random chusega
         valid_keys = [key for key in api_keys if key]
         if valid_keys:
             selected_key = random.choice(valid_keys)
             genai.configure(api_key=selected_key)
+
+        # ==============================================================
+        # 🌟 FEATURE 3: MEMORY (Pichli baatein yaad rakhna)
+        # ==============================================================
+        past_history_context = ""
+        try:
+            # Supabase se is user ki aakhri 5 baatein nikalenge
+            history_response = supabase.table("chat_history") \
+                .select("message, reply") \
+                .eq("user_id", user_id) \
+                .order("id", desc=True) \
+                .limit(5) \
+                .execute()
+                
+            if history_response.data:
+                past_history_context = "[PAST CONVERSATION CONTEXT]\n"
+                # Data ulta aata hai, isliye sequence theek karne ke liye reverse karenge
+                for row in reversed(history_response.data):
+                    past_msg = row.get("message", "").replace("\n", " ")
+                    past_reply = row.get("reply", "").replace("\n", " ")
+                    if past_msg and past_reply and past_msg != "[Image Sent]":
+                        past_history_context += f"User: {past_msg}\nMehta AI: {past_reply}\n\n"
+        except Exception as hist_err:
+            print(f"History fetch error: {hist_err}")
         # ==============================================================
             
         search_context = ""
         if user_message and not image_data_url:
             search_context = internet_search(user_message)
             
-        # 🌟 तारीख डायनामिक कर दी गई है
         today_date = datetime.datetime.now().strftime("%d %B %Y")
         base_instruction = (
             f"You are Mehta AI, a highly accurate and updated assistant for 2026. Today is {today_date}. "
@@ -148,13 +165,18 @@ def chat():
             except Exception as b64_err:
                 print(f"Base64 Decode Error: {b64_err}")
 
+        # 🌟 Past Memory + Internet Search + Current Question sabko ek sath jodne ka naya system
+        final_prompt = past_history_context
+        
         if search_context:
-            content_parts.append(f"[REAL-TIME INTERNET DATA]:\n{search_context}\n\nUser Question: {user_message}")
+            final_prompt += f"[REAL-TIME INTERNET DATA]:\n{search_context}\n\n[CURRENT QUESTION]\nUser: {user_message}"
         elif user_message:
-            content_parts.append(user_message)
+            final_prompt += f"[CURRENT QUESTION]\nUser: {user_message}"
         else:
-            content_parts.append("Look at this image carefully and tell me who or what is inside it.")
+            final_prompt += "[CURRENT QUESTION]\nLook at this image carefully and tell me who or what is inside it."
             
+        content_parts.append(final_prompt)
+        
         response = model.generate_content(content_parts)
         clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', response.text).strip()
         
