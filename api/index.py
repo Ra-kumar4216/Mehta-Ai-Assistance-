@@ -3,6 +3,7 @@ import base64
 import re
 import requests
 import datetime  
+import random  # 🌟 Naya import: API keys rotate karne ke liye
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
@@ -70,6 +71,43 @@ def chat():
 
         if not user_message and not image_data_url:
             return jsonify({"error": "Message or image required"}), 400
+
+        # ==============================================================
+        # 🌟 NEW FEATURE 1: SMART DAILY LIMIT (40 Texts, Owner Unlimited)
+        # ==============================================================
+        ADMIN_EMAIL = "ratankumarmetha@gmail.com"  # Aapke liye koi limit nahi
+        
+        if user_id != ADMIN_EMAIL:
+            try:
+                # Aaj ki date nikalenge (UTC format me)
+                today_start = datetime.datetime.utcnow().date().isoformat()
+                
+                # Supabase se check karega ki is user ne aaj kitne messages bheje
+                user_chats = supabase.table("chat_history") \
+                    .select("id") \
+                    .eq("user_id", user_id) \
+                    .gte("created_at", today_start) \
+                    .execute()
+                
+                if len(user_chats.data) >= 40:
+                    return jsonify({"reply": "⚠️ Aapki aaj ki free limit (40 messages) khatam ho gayi hai! Kripya kal dobara try karein."}), 429
+            except Exception as limit_err:
+                print(f"Limit Check Error: {limit_err}")
+
+        # ==============================================================
+        # 🌟 NEW FEATURE 2: API KEY ROTATION (Limit badhane ke liye)
+        # ==============================================================
+        api_keys = [
+            os.getenv("GEMINI_API_KEY"),
+            os.getenv("GEMINI_API_KEY_2"),
+            os.getenv("GEMINI_API_KEY_3")
+        ]
+        # Jo Keys Vercel me maujood hongi, sirf unme se random chusega
+        valid_keys = [key for key in api_keys if key]
+        if valid_keys:
+            selected_key = random.choice(valid_keys)
+            genai.configure(api_key=selected_key)
+        # ==============================================================
             
         search_context = ""
         if user_message and not image_data_url:
