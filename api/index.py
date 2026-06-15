@@ -107,7 +107,6 @@ def chat():
         # ==============================================================
         past_history_context = ""
         try:
-            # Supabase se is user ki aakhri 5 baatein nikalenge
             history_response = supabase.table("chat_history") \
                 .select("message, reply") \
                 .eq("user_id", user_id) \
@@ -117,7 +116,6 @@ def chat():
                 
             if history_response.data:
                 past_history_context = "[PAST CONVERSATION CONTEXT]\n"
-                # Data ulta aata hai, isliye sequence theek karne ke liye reverse karenge
                 for row in reversed(history_response.data):
                     past_msg = row.get("message", "").replace("\n", " ")
                     past_reply = row.get("reply", "").replace("\n", " ")
@@ -132,14 +130,16 @@ def chat():
             search_context = internet_search(user_message)
             
         today_date = datetime.datetime.now().strftime("%d %B %Y")
+        
+        # 🌟 MAIN FIX: Language rule ko aur zyada strict banaya gaya hai
         base_instruction = (
             f"You are Mehta AI, a highly accurate and updated assistant for 2026. Today is {today_date}. "
             "Your top priority is to look at the attached image carefully and identify the people or things inside it. "
             "Do NOT talk about Narendra Modi unless he is actually visible in the image. "
-            "CRITICAL LANGUAGE RULE: Always respond in the exact same language used by the user. "
-            "If the user interacts or asks a question in English, you must respond purely and fluently in English. "
-            "If the user interacts in Hindi or Hinglish, respond naturally in Hindi/Hinglish. "
-            "Ensure English-speaking users face absolutely no language barriers or forced translation."
+            "CRITICAL LANGUAGE RULE: You MUST respond in the EXACT same language as the [CURRENT QUESTION]. "
+            "Do NOT get influenced by the language of the [PAST CONVERSATION CONTEXT]. "
+            "If the [CURRENT QUESTION] is in English, reply purely and fluently in English. "
+            "If the [CURRENT QUESTION] is in Hindi or Hinglish, reply naturally in Hindi/Hinglish."
         )
         
         model = genai.GenerativeModel(
@@ -165,7 +165,6 @@ def chat():
             except Exception as b64_err:
                 print(f"Base64 Decode Error: {b64_err}")
 
-        # 🌟 Past Memory + Internet Search + Current Question sabko ek sath jodne ka naya system
         final_prompt = past_history_context
         
         if search_context:
