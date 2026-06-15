@@ -41,130 +41,8 @@
             min-height: 100vh;
             padding: 20px;
             margin: 0;
-            position: relative;
         }
 
-        /* ========== ANIMATED LOGIN DASHBOARD ========== */
-        .login-dashboard {
-            position: relative;
-            z-index: 20;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(20px);
-            border-radius: 2rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 2rem 2rem 2.5rem;
-            width: 90%;
-            max-width: 450px;
-            text-align: center;
-            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5);
-            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.9, 0.4, 1.1);
-            transition: all 0.3s ease;
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .dashboard-logo {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); text-shadow: 0 0 0 #3b82f6; }
-            50% { transform: scale(1.05); text-shadow: 0 0 12px #3b82f6; }
-            100% { transform: scale(1); text-shadow: 0 0 0 #3b82f6; }
-        }
-        .dashboard-title {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #fff, #60a5fa);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 0.5rem;
-        }
-        .dashboard-sub {
-            color: #94a3b8;
-            margin-bottom: 2rem;
-            font-size: 0.9rem;
-        }
-        .dashboard-google-btn {
-            background: white;
-            color: #1f2937;
-            border: none;
-            padding: 12px 24px;
-            font-size: 1rem;
-            font-weight: 600;
-            border-radius: 40px;
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-        }
-        .dashboard-google-btn:hover {
-            transform: translateY(-3px);
-            background: #f8fafc;
-        }
-        .dashboard-loader {
-            margin-top: 20px;
-            width: 32px;
-            height: 32px;
-            border: 3px solid rgba(255,255,255,0.2);
-            border-top-color: #3b82f6;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            display: inline-block;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Floating particles (only visible on dashboard) */
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            pointer-events: none;
-        }
-        .particle {
-            position: absolute;
-            background: rgba(59, 130, 246, 0.3);
-            border-radius: 50%;
-            animation: float 8s infinite ease-in-out;
-        }
-        @keyframes float {
-            0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.2; }
-            50% { transform: translateY(-40px) translateX(20px) rotate(180deg); opacity: 0.6; }
-            100% { transform: translateY(0) translateX(0) rotate(360deg); opacity: 0.2; }
-        }
-
-        /* ========== CHAT CONTAINER (hidden until login) ========== */
-        .chat-container {
-            display: none;
-            width: 100%;
-            max-width: 520px;
-            height: 80vh;
-            max-height: 780px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-xl);
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.02);
-            transition: transform 0.2s ease, box-shadow 0.3s ease;
-            animation: fadeInUp 0.5s ease;
-        }
-
-        .chat-container:hover {
-            box-shadow: 0 30px 55px -15px rgba(0, 0, 0, 0.6);
-        }
-
-        /* Rest of the original styles (unchanged) */
         .login-wrapper {
             width: 100%;
             max-width: 520px;
@@ -174,6 +52,7 @@
             margin-bottom: 12px;
             padding: 0 10px;
         }
+
         .google-btn {
             background: #ffffff;
             color: #1f2937;
@@ -189,10 +68,12 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             transition: all 0.2s ease;
         }
+
         .google-btn:hover {
             background: #f3f4f6;
             transform: translateY(-1px);
         }
+
         .welcome-text {
             color: #f1f5f9;
             font-size: 0.95rem;
@@ -202,6 +83,28 @@
             border-radius: 20px;
             border: 1px solid rgba(255,255,255,0.05);
         }
+
+        .chat-container {
+            width: 100%;
+            max-width: 520px;
+            height: 80vh;
+            max-height: 780px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.02);
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+        }
+
+        .chat-container:hover {
+            box-shadow: 0 30px 55px -15px rgba(0, 0, 0, 0.6);
+        }
+
         .chat-header {
             background: rgba(37, 99, 235, 0.12);
             padding: 18px 20px;
@@ -216,6 +119,7 @@
             justify-content: center;
             gap: 10px;
         }
+
         .status-dot {
             display: inline-block;
             width: 10px;
@@ -225,11 +129,13 @@
             box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
             animation: pulseRing 1.8s infinite;
         }
+
         @keyframes pulseRing {
             0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
             100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
+
         .chat-messages {
             flex: 1;
             padding: 22px 18px;
@@ -239,9 +145,11 @@
             gap: 14px;
             scroll-behavior: smooth;
         }
+
         .chat-messages::-webkit-scrollbar { width: 5px; }
         .chat-messages::-webkit-scrollbar-track { background: transparent; }
         .chat-messages::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 20px; }
+
         .message {
             max-width: 82%;
             padding: 12px 18px;
@@ -251,11 +159,29 @@
             font-size: 0.95rem;
             position: relative;
             animation: messageSlideIn 0.3s var(--ease-bounce);
+            will-change: transform, opacity;
         }
+
         @keyframes messageSlideIn {
-            from { opacity: 0; transform: translateY(18px) scale(0.96); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(18px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
+
+        @media (prefers-reduced-motion: reduce) {
+            .message {
+                animation: none;
+            }
+            .mic-btn.recording {
+                animation: none;
+            }
+        }
+
         .user {
             background: linear-gradient(125deg, #2563eb, #1e40af);
             align-self: flex-end;
@@ -263,6 +189,7 @@
             border-bottom-right-radius: 6px;
             box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
         }
+
         .bot {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(2px);
@@ -272,6 +199,7 @@
             border: 1px solid rgba(255, 255, 255, 0.06);
             padding-bottom: 40px;
         }
+
         .code-container {
             position: relative;
             margin: 12px 0 8px;
@@ -280,6 +208,7 @@
             background: #0a0e1a;
             border: 1px solid rgba(59, 130, 246, 0.3);
         }
+
         .bot pre {
             background: #0a0e1a !important;
             padding: 32px 12px 12px 12px;
@@ -287,10 +216,12 @@
             margin: 0;
             font-size: 0.8rem;
         }
+
         .bot code {
             font-family: 'Fira Code', 'Courier New', monospace;
             color: #7dd3fc;
         }
+
         .code-copy-btn {
             position: absolute;
             top: 6px;
@@ -306,11 +237,13 @@
             font-weight: 500;
             backdrop-filter: blur(8px);
         }
+
         .code-copy-btn:hover {
             background: var(--primary);
             color: white;
             transform: scale(0.96);
         }
+
         .bot-actions {
             position: absolute;
             bottom: 8px;
@@ -318,6 +251,7 @@
             display: flex;
             gap: 8px;
         }
+
         .copy-btn {
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -332,11 +266,13 @@
             gap: 6px;
             font-weight: 500;
         }
+
         .copy-btn:hover {
             background: rgba(59, 130, 246, 0.3);
             color: white;
             border-color: #3b82f6;
         }
+
         .chat-image {
             max-width: 180px;
             max-height: 180px;
@@ -349,6 +285,7 @@
         .chat-image:hover {
             transform: scale(1.02);
         }
+
         .preview-container {
             display: none;
             padding: 10px 20px;
@@ -380,6 +317,7 @@
             background: #dc2626;
             transform: scale(1.05);
         }
+
         .chat-input-area {
             display: flex;
             padding: 14px 18px 18px;
@@ -388,6 +326,7 @@
             align-items: center;
             border-top: 1px solid var(--border-light);
         }
+
         input[type="text"] {
             flex: 1;
             padding: 14px 16px;
@@ -404,12 +343,7 @@
             background: rgba(37, 99, 235, 0.1);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
         }
-        .send-btn:disabled, .attach-btn:disabled, .mic-btn:disabled,
-        input[type="text"]:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
+
         .attach-btn, .mic-btn {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-light);
@@ -424,21 +358,25 @@
             align-items: center;
             justify-content: center;
         }
+
         .attach-btn:hover, .mic-btn:hover {
             background: rgba(37, 99, 235, 0.3);
             color: white;
             transform: translateY(-2px);
         }
+
         .mic-btn.recording {
             background: #ef4444;
             color: white;
             border-color: #ef4444;
             animation: micShake 0.5s infinite alternate;
         }
+
         @keyframes micShake {
             from { transform: scale(1); box-shadow: 0 0 2px #ef4444; }
             to { transform: scale(1.05); box-shadow: 0 0 12px #ef4444; }
         }
+
         button.send-btn {
             background: linear-gradient(105deg, #2563eb, #1e40af);
             border: none;
@@ -451,11 +389,13 @@
             transition: all 0.2s var(--ease-out);
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
+
         button.send-btn:hover {
             background: #1d4ed8;
             transform: translateY(-2px) scale(1.02);
             box-shadow: 0 10px 20px -5px #1e3a8a80;
         }
+
         .thinking-dots::after {
             content: '...';
             display: inline-block;
@@ -469,6 +409,7 @@
             66% { opacity: 1; content: '...'; }
             100% { opacity: 0.3; content: '.'; }
         }
+
         .scroll-to-bottom {
             position: absolute;
             bottom: 90px;
@@ -497,6 +438,8 @@
             from { opacity: 0; transform: translateY(8px);}
             to { opacity: 1; transform: translateY(0);}
         }
+
+        /* 🌟 clear chat button (naya add kiya) */
         .clear-btn {
             background: rgba(255, 255, 255, 0.06);
             color: var(--text-muted);
@@ -512,191 +455,131 @@
             color: white;
             border-color: #ef4444;
         }
-        /* Countdown timer style */
-        .countdown-timer {
-            font-size: 0.8rem;
-            color: #fbbf24;
-            margin-top: 8px;
-            display: inline-block;
-        }
     </style>
 </head>
 <body>
 
-<!-- Floating particles background -->
-<div class="particles" id="particles"></div>
-
-<!-- ========== ANIMATED LOGIN DASHBOARD ========== -->
-<div id="loginDashboard" class="login-dashboard">
-    <div class="dashboard-logo">🤖</div>
-    <div class="dashboard-title">Mehta AI</div>
-    <div class="dashboard-sub">Your intelligent assistant, now with secure login</div>
-    <button id="dashboardGoogleBtn" class="dashboard-google-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24">
-            <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.65 1.39 7.5l3.86 3C6.16 7.55 8.84 5.04 12 5.04z"/>
-            <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.42h6.46c-.28 1.47-1.11 2.71-2.36 3.55l3.66 2.84c2.14-1.97 3.39-4.88 3.39-8.47z"/>
-            <path fill="#FBBC05" d="M5.25 14.75c-.25-.76-.39-1.57-.39-2.42s.14-1.66.39-2.42L1.39 7.5C.5 9.3 0 11.3 0 13.43s.5 4.13 1.39 5.93l3.86-3.01z"/>
-            <path fill="#34A853" d="M12 23c3.24 0 5.97-1.08 7.96-2.92l-3.66-2.84c-1.01.67-2.32 1.08-4.3 1.08-3.16 0-5.84-2.51-6.79-5.46L1.39 15.87C3.37 19.72 7.35 23 12 23z"/>
-        </svg>
-        Sign in with Google
-    </button>
-    <div id="dashboardLoader" style="display: none; margin-top: 20px;"><div class="dashboard-loader"></div></div>
+<div class="login-wrapper">
+    <div id="user-display" class="welcome-text" style="display: none;">Checking Auth...</div>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <button id="clear-chat-btn" class="clear-btn" onclick="clearChatHistory()">🗑️ Clear Chat</button>
+        <button id="google-login-btn" class="google-btn">
+            <svg style="width:16px; height:16px;" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.65 1.39 7.5l3.86 3C6.16 7.55 8.84 5.04 12 5.04z"/><path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.42h6.46c-.28 1.47-1.11 2.71-2.36 3.55l3.66 2.84c2.14-1.97 3.39-4.88 3.39-8.47z"/><path fill="#FBBC05" d="M5.25 14.75c-.25-.76-.39-1.57-.39-2.42s.14-1.66.39-2.42L1.39 7.5C.5 9.3 0 11.3 0 13.43s.5 4.13 1.39 5.93l3.86-3.01z"/><path fill="#34A853" d="M12 23c3.24 0 5.97-1.08 7.96-2.92l-3.66-2.84c-1.01.67-2.32 1.08-4.3 1.08-3.16 0-5.84-2.51-6.79-5.46L1.39 15.87C3.37 19.72 7.35 23 12 23z"/></svg>
+            Sign in with Google
+        </button>
+    </div>
 </div>
 
-<!-- ========== ORIGINAL CHAT CONTAINER (hidden until login) ========== -->
-<div id="chatContainer" class="chat-container">
+<div class="chat-container">
     <div class="chat-header">
         <span class="status-dot"></span>
         Mehta AI Assistant
     </div>
+
     <div class="chat-messages" id="chat-box">
         <div class="message bot">✨ Hello! I'm Mehta, your intelligent assistant. Ask me anything, share images, or use voice — I'm here to help.</div>
     </div>
+
     <div class="preview-container" id="preview-area">
         <img src="" id="img-preview" class="preview-img" alt="preview">
         <span style="font-size: 0.85rem; color: #cbd5e1; flex:1;">Image ready</span>
         <button class="remove-btn" onclick="clearImage()" aria-label="Remove image">✕</button>
     </div>
+
     <div class="chat-input-area">
         <input type="file" id="image-input" accept="image/*" style="display: none;" onchange="handleImageSelect()">
-        <button class="attach-btn" id="attach-btn" onclick="document.getElementById('image-input').click()" aria-label="Attach image">📎</button>
+        <button class="attach-btn" onclick="document.getElementById('image-input').click()" aria-label="Attach image">📎</button>
         <button class="mic-btn" id="mic-button" onclick="toggleVoiceInput()" aria-label="Voice input">🎙️</button>
         <input type="text" id="user-input" placeholder="Type or speak..." onkeypress="if(event.key === 'Enter') sendMessage()" autocomplete="off">
-        <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+        <button class="send-btn" onclick="sendMessage()">Send</button>
     </div>
     <div class="scroll-to-bottom" id="scrollToBottomBtn" onclick="scrollChatToBottom()">↓</div>
 </div>
 
 <script>
-    // ==================== SUPABASE INIT ====================
+    // 🌟 Supabase Initialization
     const supabaseUrl = "https://wrnzwubsaxiizxeppmac.supabase.co";
     const supabaseKey = "sb_publishable_eRF6OFvUXFwwHNRiv1sO4g_yAGoJt2O";
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    let loggedInUserId = "default_user";
+    let loggedInUserId = "default_user"; // डिफ़ॉल्ट आईडी
 
-    // DOM elements for dashboard and chat
-    const loginDashboard = document.getElementById('loginDashboard');
-    const chatContainer = document.getElementById('chatContainer');
-    const dashboardGoogleBtn = document.getElementById('dashboardGoogleBtn');
-    const dashboardLoader = document.getElementById('dashboardLoader');
-
-    // ========== SHOW/HIDE LOGIN/CHAT ==========
-    function showChatAfterLogin(user) {
-        loginDashboard.style.display = 'none';
-        chatContainer.style.display = 'flex';
-        // Remove particles from body? Keep them, but they'll be behind chat anyway.
-    }
-    function showLoginDashboard() {
-        loginDashboard.style.display = 'flex';
-        chatContainer.style.display = 'none';
-    }
-
-    // ========== UPDATE UI AFTER AUTH ==========
+    // 🌟 UI अपडेट करने का स्मार्ट फंक्शन जो बटन छुपाएगा और ईमेल आईडी सिंक करेगा
     function updateLoginUI(user) {
-        // This function updates the top-right user display inside the chat header.
-        // Since we moved away from the old login-wrapper, we need to add user display inside chat header.
-        // For simplicity, we'll keep the original user display div inside the chat container's header.
-        // The original code had a login-wrapper; we'll adapt by adding a user info area inside chat header.
-        const userDisplaySpan = document.getElementById('user-display-chat');
+        const loginBtn = document.getElementById('google-login-btn');
+        const userDisplay = document.getElementById('user-display');
+        
         if (user) {
-            if (!userDisplaySpan) {
-                // Create it if not exists
-                const header = document.querySelector('.chat-header');
-                const span = document.createElement('div');
-                span.id = 'user-display-chat';
-                span.className = 'welcome-text';
-                span.style.marginLeft = 'auto';
-                header.appendChild(span);
-            }
-            const span = document.getElementById('user-display-chat');
-            if (span) span.innerText = `👋 ${user.user_metadata.full_name || user.email}`;
-            loggedInUserId = user.email;
+            loginBtn.style.display = 'none';
+            userDisplay.style.display = 'block';
+            userDisplay.innerText = 👋 Welcome, ${user.user_metadata.full_name || user.email};
+            loggedInUserId = user.email; // बैकएंड डेटाबेस में भेजने के लिए सेट किया
         } else {
-            const span = document.getElementById('user-display-chat');
-            if (span) span.remove();
+            loginBtn.style.display = 'flex';
+            userDisplay.style.display = 'none';
             loggedInUserId = "default_user";
         }
     }
 
-    // ========== GOOGLE LOGIN (dashboard button) ==========
-    dashboardGoogleBtn.addEventListener('click', async () => {
-        dashboardLoader.style.display = 'inline-block';
-        dashboardGoogleBtn.disabled = true;
+    // 🌟 Google Login बटन इवेंट
+    document.getElementById('google-login-btn').addEventListener('click', async () => {
         const { error } = await _supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: window.location.origin }
+            options: {
+                redirectTo: window.location.origin
+            }
         });
-        if (error) {
-            alert("Login error: " + error.message);
-            dashboardLoader.style.display = 'none';
-            dashboardGoogleBtn.disabled = false;
-        }
+        if (error) console.error("Login Error:", error.message);
     });
 
-    // Handle session after redirect
-    async function handleSession() {
+    // 🌟 सुपाबेस को यूआरएल टोकन रीड करने के लिए 1.5 सेकंड का स्मार्ट डिले दिया
+    setTimeout(async () => {
         const { data: { user } } = await _supabase.auth.getUser();
-        if (user) {
-            updateLoginUI(user);
-            showChatAfterLogin(user);
-            loadChatHistory();  // load history after showing chat
-        } else {
-            showLoginDashboard();
-        }
-        dashboardLoader.style.display = 'none';
-        dashboardGoogleBtn.disabled = false;
-    }
+        updateLoginUI(user);
+        // login state ke baad us user ki saved history load karo
+        loadChatHistory();
+    }, 1500);
 
+    // रियल-टाइम ऑथेंटिकेशन स्टेट चेंज लिस्नर
     _supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
+        if (session && session.user) {
             updateLoginUI(session.user);
-            showChatAfterLogin(session.user);
-            loadChatHistory();
-        } else if (event === 'SIGNED_OUT') {
-            showLoginDashboard();
+        } else {
+            updateLoginUI(null);
         }
     });
 
-    // ========== THINKING LOCK (same as before) ==========
-    let isWaitingForResponse = false;
-    function setInputsEnabled(enabled) {
-        const sendBtn = document.getElementById('send-btn');
-        const attachBtn = document.getElementById('attach-btn');
-        const micBtn = document.getElementById('mic-button');
-        const userInput = document.getElementById('user-input');
-        if (sendBtn) sendBtn.disabled = !enabled;
-        if (attachBtn) attachBtn.disabled = !enabled;
-        if (micBtn) micBtn.disabled = !enabled;
-        if (userInput) userInput.disabled = !enabled;
-    }
-
-    // ========== CHAT FUNCTIONALITY (unchanged except 429 handling) ==========
+    // ---------- state ----------
     let selectedBase64Image = null;
     let recognition = null;
     let isRecording = false;
     let currentAssistantReplyRaw = "";
 
+    // 🌟 chat history ka storage key (har user ke liye alag)
     function getStorageKey() {
         return "mehta_chat_history_" + (loggedInUserId || "default_user");
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = ' ';
+        recognition.lang = ' '; 
+
         recognition.onstart = () => {
             isRecording = true;
             const micBtn = document.getElementById("mic-button");
             if (micBtn) micBtn.classList.add("recording");
             document.getElementById("user-input").placeholder = "🎙️ Listening...";
         };
+        
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             document.getElementById("user-input").value = transcript;
         };
+        
         recognition.onerror = () => stopRecording();
         recognition.onend = () => stopRecording();
     } else {
@@ -713,9 +596,15 @@
 
     function toggleVoiceInput() {
         if (!recognition) return;
-        if (isWaitingForResponse) return;
-        if (isRecording) recognition.stop();
-        else recognition.start();
+        if (isRecording) {
+            recognition.stop();
+        } else {
+            try {
+                recognition.start();
+            } catch(e) {
+                console.log("Recognition already running:", e);
+            }
+        }
     }
 
     function handleImageSelect() {
@@ -757,8 +646,11 @@
     function checkScrollVisibility() {
         if (!chatBox) return;
         const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 120;
-        if (!isNearBottom) scrollBtn.classList.add("show");
-        else scrollBtn.classList.remove("show");
+        if (!isNearBottom) {
+            scrollBtn.classList.add("show");
+        } else {
+            scrollBtn.classList.remove("show");
+        }
     }
 
     function scrollChatToBottom() {
@@ -797,13 +689,19 @@
         botDivElement.appendChild(actionsDiv);
     }
 
+    // ============================================================
+    // 🌟 CHAT HISTORY (localStorage) — naya add kiya gaya hai
+    // ============================================================
+
     function saveMessageToHistory(sender, text, image = null) {
         let history = [];
         try {
             history = JSON.parse(localStorage.getItem(getStorageKey())) || [];
-        } catch (e) { history = []; }
+        } catch (e) {
+            history = [];
+        }
         history.push({ sender, text, image });
-        if (history.length > 100) history = history.slice(-100);
+        if (history.length > 100) history = history.slice(-100); // sirf last 100 messages
         localStorage.setItem(getStorageKey(), JSON.stringify(history));
     }
 
@@ -811,8 +709,11 @@
         let history = [];
         try {
             history = JSON.parse(localStorage.getItem(getStorageKey())) || [];
-        } catch (e) { history = []; }
-        if (history.length === 0) return;
+        } catch (e) {
+            history = [];
+        }
+        if (history.length === 0) return; // welcome message wahi rehne do
+
         chatBox.innerHTML = "";
         history.forEach(item => {
             if (item.sender === "user") {
@@ -820,7 +721,7 @@
                 userDiv.className = "message user";
                 if (item.image) {
                     const imgElem = document.createElement("img");
-                    imgElem.src = `data:image/jpeg;base64,${item.image}`;
+                    imgElem.src = data:image/jpeg;base64,${item.image};
                     imgElem.className = "chat-image";
                     imgElem.alt = "user attached";
                     userDiv.appendChild(imgElem);
@@ -847,46 +748,22 @@
         chatBox.innerHTML = '<div class="message bot">✨ Hello! I\'m Mehta, your intelligent assistant. Ask me anything, share images, or use voice — I\'m here to help.</div>';
     }
 
-    // ========== COUNTDOWN TIMER FOR RATE LIMIT (24h) ==========
-    let countdownInterval = null;
-    function showCountdownMessage(botDiv, resetTime) {
-        // resetTime is a Date object set to now + 24h
-        function updateTimer() {
-            const now = new Date();
-            const diff = resetTime - now;
-            if (diff <= 0) {
-                if (countdownInterval) clearInterval(countdownInterval);
-                botDiv.innerHTML = `<span style="color:#fca5a5;">⚠️ Your limit has been reset. You can now send messages again!</span>`;
-                // Optionally, you could reload or just let user try again.
-                return;
-            }
-            const hours = Math.floor(diff / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (3600000)) / (1000 * 60));
-            const seconds = Math.floor((diff % (60000)) / 1000);
-            botDiv.innerHTML = `<span style="color:#fca5a5;">⚠️ Limit complete. Please use after 24 hours.<br>Next available: ${resetTime.toLocaleString()} (${hours}h ${minutes}m ${seconds}s remaining)</span>`;
-        }
-        updateTimer();
-        if (countdownInterval) clearInterval(countdownInterval);
-        countdownInterval = setInterval(updateTimer, 1000);
-    }
+    // ============================================================
+    // SEND MESSAGE — real backend, fake fallback hata diya gaya hai
+    // ============================================================
 
-    // ========== SEND MESSAGE with 429 handling ==========
     async function sendMessage() {
-        if (isWaitingForResponse) return;
         const inputField = document.getElementById("user-input");
         const messageText = inputField.value.trim();
         if (!messageText && !selectedBase64Image) return;
 
-        isWaitingForResponse = true;
-        setInputsEnabled(false);
-
-        // Show user message
         const userDiv = document.createElement("div");
         userDiv.className = "message user";
         if (selectedBase64Image) {
             const imgElem = document.createElement("img");
-            imgElem.src = `data:image/jpeg;base64,${selectedBase64Image}`;
+            imgElem.src = data:image/jpeg;base64,${selectedBase64Image};
             imgElem.className = "chat-image";
+            imgElem.alt = "user attached";
             userDiv.appendChild(imgElem);
         }
         if (messageText) {
@@ -895,14 +772,15 @@
             userDiv.appendChild(textSpan);
         }
         chatBox.appendChild(userDiv);
-        const imagePayload = selectedBase64Image;
         inputField.value = "";
+        const imagePayload = selectedBase64Image;
         clearImage();
         chatBox.scrollTop = chatBox.scrollHeight;
         checkScrollVisibility();
+
+        // 🌟 user ka message history me save karo
         saveMessageToHistory("user", messageText, imagePayload);
 
-        // Thinking indicator
         const botDiv = document.createElement("div");
         botDiv.className = "message bot";
         const thinkingSpan = document.createElement("span");
@@ -916,75 +794,44 @@
             const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    message: messageText,
+                body: JSON.stringify({ 
+                    message: messageText, 
                     image: imagePayload,
-                    user_id: loggedInUserId
+                    user_id: loggedInUserId 
                 })
             });
             const data = await response.json();
             botDiv.innerHTML = "";
 
             if (!response.ok) {
-                if (response.status === 429) {
-                    // Rate limit: compute 24h from now and show countdown
-                    const resetTime = new Date();
-                    resetTime.setHours(resetTime.getHours() + 24);
-                    showCountdownMessage(botDiv, resetTime);
-                } else {
-                    const errMsg = data.error || data.reply || "Server error aaya, dobara try karo.";
-                    botDiv.innerHTML = `<span style="color:#fca5a5;">⚠️ ${errMsg}</span>`;
-                }
+                // 🌟 REAL backend error dikhao — fake reply nahi
+                const errMsg = data.error || data.reply || "Server error aaya, dobara try karo.";
+                botDiv.innerHTML = <span style="color:#fca5a5;">⚠️ ${errMsg}</span>;
             } else {
                 const replyText = data.reply || "I'm here, but response format unexpected. Try again!";
                 renderMarkdownWithActions(replyText, botDiv);
+                // 🌟 bot ka reply history me save karo
                 saveMessageToHistory("bot", replyText);
             }
         } catch (error) {
+            // 🌟 network/connection error — fake demo reply ki jagah real message
             console.warn("Network/API error:", error);
-            botDiv.innerHTML = `<span style="color:#fca5a5;">⚠️ Network error: server tak pahunch nahi paaya. Internet check karo ya thodi der baad try karo.</span>`;
+            botDiv.innerHTML = <span style="color:#fca5a5;">⚠️ Network error: server tak pahunch nahi paaya. Internet check karo ya thodi der baad try karo.</span>;
         }
-
-        isWaitingForResponse = false;
-        setInputsEnabled(true);
         chatBox.scrollTop = chatBox.scrollHeight;
         checkScrollVisibility();
     }
 
-    // ========== INITIAL SETUP ==========
     const observer = new MutationObserver(() => {
-        if (chatContainer.style.display === 'flex') {
-            chatBox.scrollTop = chatBox.scrollHeight;
-            checkScrollVisibility();
-        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+        checkScrollVisibility();
     });
     observer.observe(chatBox, { childList: true, subtree: true });
-
     window.onload = () => {
-        handleSession();
-        // Create floating particles
-        const particlesContainer = document.getElementById('particles');
-        for (let i = 0; i < 50; i++) {
-            const p = document.createElement('div');
-            p.className = 'particle';
-            const size = Math.random() * 8 + 2;
-            p.style.width = size + 'px';
-            p.style.height = size + 'px';
-            p.style.left = Math.random() * 100 + '%';
-            p.style.top = Math.random() * 100 + '%';
-            p.style.animationDelay = Math.random() * 8 + 's';
-            p.style.animationDuration = 6 + Math.random() * 6 + 's';
-            particlesContainer.appendChild(p);
-        }
+        loadChatHistory();
+        chatBox.scrollTop = chatBox.scrollHeight;
+        checkScrollVisibility();
     };
-
-    // Make global functions accessible
-    window.clearChatHistory = clearChatHistory;
-    window.clearImage = clearImage;
-    window.handleImageSelect = handleImageSelect;
-    window.toggleVoiceInput = toggleVoiceInput;
-    window.scrollChatToBottom = scrollChatToBottom;
-    window.sendMessage = sendMessage;
 </script>
 </body>
 </html>
