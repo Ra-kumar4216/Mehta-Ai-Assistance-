@@ -2,6 +2,7 @@ import os
 import base64
 import re
 import requests
+import datetime  
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
@@ -51,10 +52,8 @@ def chat():
         user_message = data.get("message", "").strip()
         image_data_url = data.get("image", None)
         
-        # 🌟 फ्रंटएंड से आ रही रियल Google ID/Email
         user_id = data.get("user_id", "default_user")
         
-        # Extract data if frontend sends payload in old OpenRouter format
         if not user_message and "messages" in data:
             messages = data.get("messages", [])
             for msg in messages:
@@ -73,13 +72,13 @@ def chat():
             return jsonify({"error": "Message or image required"}), 400
             
         search_context = ""
-        # Do not search internet if image is attached to avoid confusion
         if user_message and not image_data_url:
             search_context = internet_search(user_message)
             
-        # 🌟 यहाँ भाषा की सेटिंग को पूरी तरह से डायनामिक और स्मार्ट बना दिया गया है
+        # 🌟 तारीख डायनामिक कर दी गई है
+        today_date = datetime.datetime.now().strftime("%d %B %Y")
         base_instruction = (
-            "You are Mehta AI, a highly accurate and updated assistant for 2026. "
+            f"You are Mehta AI, a highly accurate and updated assistant for 2026. Today is {today_date}. "
             "Your top priority is to look at the attached image carefully and identify the people or things inside it. "
             "Do NOT talk about Narendra Modi unless he is actually visible in the image. "
             "CRITICAL LANGUAGE RULE: Always respond in the exact same language used by the user. "
@@ -94,8 +93,6 @@ def chat():
         )
         
         content_parts = []
-        
-        # Clean Base64 data from Image URL and extract bytes
         if image_data_url:
             if "base64," in image_data_url:
                 header, encoded = image_data_url.split("base64,", 1)
@@ -105,7 +102,6 @@ def chat():
                 mime_type = "image/jpeg"
                 
             try:
-                # Remove extra spaces and decode
                 image_bytes = base64.b64decode(encoded.strip())
                 content_parts.append({
                     "mime_type": mime_type,
@@ -124,11 +120,8 @@ def chat():
         response = model.generate_content(content_parts)
         clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', response.text).strip()
         
-        # 🌟 BACKUP RECOVERY: वर्सेल (Vercel) के लॉग्स में हमेशा के लिए सेव करने के लिए
-        # अगर सुपाबेस बंद भी हो जाए, तो भी यहाँ से चैट रिकवर हो जाएगी
         print(f"BACKUP LOG - User: {user_id} | Client Msg: {user_message} | AI Reply: {clean_reply}")
         
-        # Save chat history securely to Supabase Database before returning response
         try:
             supabase.table("chat_history").insert({
                 "user_id": user_id,
