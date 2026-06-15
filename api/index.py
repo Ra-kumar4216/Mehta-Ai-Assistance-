@@ -131,15 +131,20 @@ def chat():
             
         today_date = datetime.datetime.now().strftime("%d %B %Y")
         
-        # 🌟 MAIN FIX: Language rule ko aur zyada strict banaya gaya hai
+        # 🌟 MAIN FIX: 5 Bhashaon (Languages) ka strict rule lagaya gaya hai
         base_instruction = (
             f"You are Mehta AI, a highly accurate and updated assistant for 2026. Today is {today_date}. "
             "Your top priority is to look at the attached image carefully and identify the people or things inside it. "
             "Do NOT talk about Narendra Modi unless he is actually visible in the image. "
             "CRITICAL LANGUAGE RULE: You MUST respond in the EXACT same language as the [CURRENT QUESTION]. "
             "Do NOT get influenced by the language of the [PAST CONVERSATION CONTEXT]. "
-            "If the [CURRENT QUESTION] is in English, reply purely and fluently in English. "
-            "If the [CURRENT QUESTION] is in Hindi or Hinglish, reply naturally in Hindi/Hinglish."
+            "You have strict expertise in 5 languages: English, Hindi, Hinglish, Tamil, and Telugu. "
+            "- If the [CURRENT QUESTION] is in English, reply purely in English. "
+            "- If the [CURRENT QUESTION] is in Hindi, reply purely in Hindi. "
+            "- If the [CURRENT QUESTION] is in Hinglish, reply naturally in Hinglish. "
+            "- If the [CURRENT QUESTION] is in Tamil (தமிழ்), reply fluently in Tamil. "
+            "- If the [CURRENT QUESTION] is in Telugu (తెలుగు), reply fluently in Telugu. "
+            "Always adapt to the user's preferred language instantly."
         )
         
         model = genai.GenerativeModel(
