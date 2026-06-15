@@ -512,7 +512,7 @@
         if (user) {
             loginBtn.style.display = 'none';
             userDisplay.style.display = 'block';
-            userDisplay.innerText = 👋 Welcome, ${user.user_metadata.full_name || user.email};
+            userDisplay.innerText = `👋 Welcome, ${user.user_metadata.full_name || user.email}`;
             loggedInUserId = user.email; // बैकएंड डेटाबेस में भेजने के लिए सेट किया
         } else {
             loginBtn.style.display = 'flex';
@@ -721,7 +721,7 @@
                 userDiv.className = "message user";
                 if (item.image) {
                     const imgElem = document.createElement("img");
-                    imgElem.src = data:image/jpeg;base64,${item.image};
+                    imgElem.src = `data:image/jpeg;base64,${item.image}`;
                     imgElem.className = "chat-image";
                     imgElem.alt = "user attached";
                     userDiv.appendChild(imgElem);
@@ -761,7 +761,7 @@
         userDiv.className = "message user";
         if (selectedBase64Image) {
             const imgElem = document.createElement("img");
-            imgElem.src = data:image/jpeg;base64,${selectedBase64Image};
+            imgElem.src = `data:image/jpeg;base64,${selectedBase64Image}`;
             imgElem.className = "chat-image";
             imgElem.alt = "user attached";
             userDiv.appendChild(imgElem);
@@ -806,7 +806,7 @@
             if (!response.ok) {
                 // 🌟 REAL backend error dikhao — fake reply nahi
                 const errMsg = data.error || data.reply || "Server error aaya, dobara try karo.";
-                botDiv.innerHTML = <span style="color:#fca5a5;">⚠️ ${errMsg}</span>;
+                botDiv.innerHTML = `<span style="color:#fca5a5;">⚠️ ${errMsg}</span>`;
             } else {
                 const replyText = data.reply || "I'm here, but response format unexpected. Try again!";
                 renderMarkdownWithActions(replyText, botDiv);
@@ -816,7 +816,7 @@
         } catch (error) {
             // 🌟 network/connection error — fake demo reply ki jagah real message
             console.warn("Network/API error:", error);
-            botDiv.innerHTML = <span style="color:#fca5a5;">⚠️ Network error: server tak pahunch nahi paaya. Internet check karo ya thodi der baad try karo.</span>;
+            botDiv.innerHTML = `<span style="color:#fca5a5;">⚠️ Network error: server tak pahunch nahi paaya. Internet check karo ya thodi der baad try karo.</span>`;
         }
         chatBox.scrollTop = chatBox.scrollHeight;
         checkScrollVisibility();
