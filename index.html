@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <script>
+        if (!localStorage.getItem('user_email') && !window.location.hash.includes('access_token')) {
+            window.location.href = 'signin.html';
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Mehta AI · Intelligent Assistant</title>
