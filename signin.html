@@ -27,9 +27,9 @@
             text-align: center;
             box-shadow: 0 25px 45px -12px rgba(0,0,0,0.5);
         }
-        .logo { font-size: 2.5rem; margin-bottom: 8px; }
-        h1 { font-size: 1.6rem; margin-bottom: 8px; }
-        p { color: #94a3b8; margin-bottom: 32px; font-size: 0.95rem; }
+        .logo { font-size: 3rem; margin-bottom: 12px; }
+        h1 { font-size: 1.8rem; margin-bottom: 8px; font-weight: 700; }
+        p { color: #94a3b8; margin-bottom: 36px; font-size: 0.95rem; line-height: 1.6; }
         .google-btn {
             background: #ffffff;
             color: #1f2937;
@@ -44,30 +44,60 @@
             gap: 10px;
             margin: 0 auto;
             transition: transform 0.15s, box-shadow 0.15s;
-        }
-        .google-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
-        .skip-btn {
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.15);
-            color: #94a3b8;
-            padding: 10px 24px;
-            border-radius: 40px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            display: block;
             width: fit-content;
-            margin: 16px auto 0;
-            transition: color 0.15s;
         }
-        .skip-btn:hover { color: #f8fafc; }
-        .status-msg { margin-top: 20px; font-size: 0.85rem; color: #64748b; }
+        .google-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        .google-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status-msg {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: #64748b;
+            min-height: 20px;
+        }
+        .divider {
+            margin: 24px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #475569;
+            font-size: 0.8rem;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+        }
+        .features {
+            margin-top: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        .feature-icon { font-size: 1rem; }
     </style>
 </head>
 <body>
 <div class="card">
     <div class="logo">🤖</div>
     <h1>Mehta AI</h1>
-    <p>Your intelligent assistant.<br>Sign in to save your chat history.</p>
+    <p>Your intelligent assistant.<br>Sign in to access the chat.</p>
+
     <button class="google-btn" id="google-btn">
         <svg width="20" height="20" viewBox="0 0 48 48">
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -77,32 +107,59 @@
         </svg>
         Sign in with Google
     </button>
-    <button class="skip-btn" id="skip-btn">Continue without login →</button>
+
     <div class="status-msg" id="status-msg"></div>
+
+    <div class="features">
+        <div class="feature-item"><span class="feature-icon">💬</span> Unlimited chat history saved</div>
+        <div class="feature-item"><span class="feature-icon">🔒</span> Secure Google login</div>
+        <div class="feature-item"><span class="feature-icon">🌐</span> Real-time internet search</div>
+        <div class="feature-item"><span class="feature-icon">📷</span> Image understanding</div>
+    </div>
 </div>
 
 <script>
     const supabaseUrl = "https://wrnzwubsaxiizxeppmac.supabase.co";
     const supabaseKey = "sb_publishable_eRF6OFvUXFwwHNRiv1sO4g_yAGoJt2O";
-    const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    const _supabase   = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Agar pehle se logged in hai toh seedha chat pe bhejo
+    // Agar already logged in hai toh seedha index.html pe bhejo
     _supabase.auth.getSession().then(({ data: { session } }) => {
         if (session && session.user) {
             window.location.replace('index.html');
         }
     });
 
-    document.getElementById('google-btn').addEventListener('click', async () => {
-        document.getElementById('status-msg').innerText = 'Redirecting to Google...';
-        await _supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: window.location.origin + '/index.html' }
-        });
+    // Google OAuth redirect ke baad token process karo
+    _supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session && session.user) {
+            document.getElementById('status-msg').innerText = '✅ Login successful! Redirecting...';
+            setTimeout(() => {
+                window.location.replace('index.html');
+            }, 800);
+        }
     });
 
-    document.getElementById('skip-btn').addEventListener('click', () => {
-        window.location.replace('index.html');
+    document.getElementById('google-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('google-btn');
+        const msg = document.getElementById('status-msg');
+        btn.disabled = true;
+        msg.innerText = 'Redirecting to Google...';
+        try {
+            const { error } = await _supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + '/index.html'
+                }
+            });
+            if (error) {
+                msg.innerText = '❌ Error: ' + error.message;
+                btn.disabled = false;
+            }
+        } catch (e) {
+            msg.innerText = '❌ Something went wrong. Try again.';
+            btn.disabled = false;
+        }
     });
 </script>
 </body>
