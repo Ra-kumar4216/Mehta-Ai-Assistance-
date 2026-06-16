@@ -5,39 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mehta.ai — Sign In</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <style>
-    :root { --navy: #0A0E1A; --indigo: #6C63FF; --violet: #A78BFA; --ghost: #F0F0FF; --glass: rgba(255,255,255,0.045); --border: rgba(167,139,250,0.18); }
-    body { background: var(--navy); color: var(--ghost); font-family: 'Inter', sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-    .card { background: var(--glass); border: 1px solid var(--border); border-radius: 28px; padding: 40px; width: 100%; max-width: 400px; text-align: center; backdrop-filter: blur(20px); }
-    .btn-google { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; border-radius: 10px; cursor: pointer; margin-top: 20px; transition: 0.3s; }
-    .btn-google:hover { background: rgba(108, 99, 255, 0.2); }
-    input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #444; background: #1a1a2e; color: white; box-sizing: border-box; }
+    :root { --navy: #0A0E1A; --indigo: #6C63FF; --ghost: #F0F0FF; }
+    body { background: var(--navy); color: var(--ghost); font-family: sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .card { background: rgba(255,255,255,0.05); padding: 40px; border-radius: 20px; text-align: center; width: 300px; }
+    .btn-google { width: 100%; padding: 12px; background: var(--indigo); color: white; border: none; border-radius: 10px; cursor: pointer; }
   </style>
 </head>
 <body>
-
 <div class="card">
   <h2>Welcome back 👋</h2>
-  <p>Sign in to Mehta.ai</p>
-  
   <button id="googleBtn" class="btn-google">Continue with Google</button>
-  
-  <div style="margin-top: 20px;">
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button id="signInBtn" class="btn-google" style="background: var(--indigo);">Sign in</button>
-  </div>
 </div>
 
 <script>
-  // Supabase Initialize
-  const supabase = supabase.createClient(
-    'https://wrnzwubsaxiizxeppmac.supabase.co', 
-    'sb_publishable_eRF6OFvUXFwwHNRiv1sO4g_yAGoJt2O'
-  );
+  const supabase = supabase.createClient('https://wrnzwubsaxiizxeppmac.supabase.co', 'sb_publishable_eRF6OFvUXFwwHNRiv1sO4g_yAGoJt2O');
 
-  // Google Login
   document.getElementById('googleBtn').addEventListener('click', async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -45,20 +28,7 @@
     });
   });
 
-  // Email Sign-In
-  document.getElementById('signInBtn').addEventListener('click', async () => {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    
-    if (error) alert(error.message);
-    else {
-      localStorage.setItem('user_email', data.user.email);
-      window.location.href = 'index.html';
-    }
-  });
-
-  // Check Session
+  // Check agar pehle se login hai, tabhi index par bhejo
   window.onload = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
