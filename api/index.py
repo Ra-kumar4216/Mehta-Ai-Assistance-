@@ -72,20 +72,37 @@ def chat():
             return jsonify({"error": "Message or image required"}), 400
 
         # ==============================================================
-        # 🌟 FEATURE 1: SMART DAILY LIMIT
+        # 🌟 FEATURE 1: SMART DAILY LIMIT (50 chats/day, per logged-in user)
         # ==============================================================
-        ADMIN_EMAIL = "ratankumarmetha@gmail.com"  
+        # NOTE: Limit sirf "default_user" (not logged-in) aur logged-in
+        # emails par lagta hai. ADMIN_EMAIL ke liye koi limit nahi.
+        ADMIN_EMAIL = "ratankumarmetha@gmail.com"
+        DAILY_CHAT_LIMIT = 50
+
         if user_id != ADMIN_EMAIL:
             try:
                 today_start = datetime.datetime.utcnow().date().isoformat()
                 user_chats = supabase.table("chat_history") \
-                    .select("id") \
+                    .select("id, created_at") \
                     .eq("user_id", user_id) \
                     .gte("created_at", today_start) \
+                    .order("created_at", desc=False) \
                     .execute()
-                
-                if len(user_chats.data) >= 40:
-                    return jsonify({"reply": "⚠️ Aapki aaj ki free limit (40 messages) khatam ho gayi hai! Kripya kal dobara try karein."}), 429
+
+                if len(user_chats.data) >= DAILY_CHAT_LIMIT:
+                    # Reset time = 24 hours baad first message ke (rolling se zyada
+                    # simple: agle UTC din ki shuruaat)
+                    tomorrow_utc = datetime.datetime.utcnow().date() + datetime.timedelta(days=1)
+                    reset_at = datetime.datetime.combine(
+                        tomorrow_utc, datetime.time.min, tzinfo=datetime.timezone.utc
+                    ).isoformat()
+
+                    return jsonify({
+                        "reply": "⚠️ Aapki aaj ki free limit (50 chats) khatam ho gayi hai! Kripya 24 ghante baad dobara try karein.",
+                        "error": "daily_limit_reached",
+                        "reset_at": reset_at,
+                        "limit": DAILY_CHAT_LIMIT
+                    }), 429
             except Exception as limit_err:
                 print(f"Limit Check Error: {limit_err}")
 
