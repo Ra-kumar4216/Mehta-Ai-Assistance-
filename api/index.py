@@ -90,8 +90,6 @@ def chat():
                     .execute()
 
                 if len(user_chats.data) >= DAILY_CHAT_LIMIT:
-                    # Reset time = 24 hours baad first message ke (rolling se zyada
-                    # simple: agle UTC din ki shuruaat)
                     tomorrow_utc = datetime.datetime.utcnow().date() + datetime.timedelta(days=1)
                     reset_at = datetime.datetime.combine(
                         tomorrow_utc, datetime.time.min, tzinfo=datetime.timezone.utc
@@ -148,7 +146,6 @@ def chat():
             
         today_date = datetime.datetime.now().strftime("%d %B %Y")
         
-        # 🌟 MAIN FIX: 5 Bhashaon (Languages) ka strict rule lagaya gaya hai
         base_instruction = (
             f"You are Mehta AI, a highly accurate and updated assistant for 2026. Today is {today_date}. "
             "Your top priority is to look at the attached image carefully and identify the people or things inside it. "
@@ -164,8 +161,9 @@ def chat():
             "Always adapt to the user's preferred language instantly."
         )
         
+        # ✅ FIX: model name "gemini-3.5-flash" → "gemini-2.0-flash" (jo exist karta hai)
         model = genai.GenerativeModel(
-            model_name="gemini-3.5-flash",
+            model_name="gemini-2.0-flash",
             system_instruction=base_instruction
         )
         
