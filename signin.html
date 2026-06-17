@@ -4,13 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Sign In - Mehta.ai</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
+    background: #0a0a14;
     background: radial-gradient(ellipse at 30% 20%, #1a1f3a 0%, #0a0a14 50%, #0d1a2e 100%);
     color: #fff;
   }
@@ -141,6 +144,16 @@
   </div>
 
 <script>
+  if (typeof supabase === 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+      const card = document.querySelector('.card');
+      if (card) {
+        card.innerHTML = '<p style="text-align:center;color:#fca5a5;padding:20px;">Connection library failed to load. Please check your internet connection and refresh the page.</p>';
+      }
+    });
+    throw new Error('Supabase SDK failed to load from CDN');
+  }
+
   const supabaseUrl = "https://wrnzwubsaxiizxeppmac.supabase.co";
   const supabaseKey = "sb_publishable_eRF6OFvUXFwwHNRiv1sO4g_yAGoJt2O";
   const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
