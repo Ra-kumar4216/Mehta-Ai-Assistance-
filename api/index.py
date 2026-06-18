@@ -6,8 +6,8 @@ import datetime
 import random  
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from google import genai              # ✅ Naya Package Import
-from google.genai import types        # ✅ Naya Package Types
+from google import genai              
+from google.genai import types        
 from supabase import create_client, Client
 
 app = Flask(__name__)
@@ -15,12 +15,21 @@ CORS(app)
 
 # API Keys Configuration
 api_key = os.getenv("GEMINI_API_KEY")
-# genai.configure() yahan se hata diya hai, ab client function ke andar banega
 
-# Supabase Configuration
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-supabase: Client = create_client(supabase_url, supabase_key)
+# ✅ FIX 1: Supabase ke variables jo aapne Vercel me dale the (NEXT_PUBLIC_) 
+# unhe bhi add kar diya hai taaki "NoneType" error se server crash (500) na ho.
+supabase_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+
+# Safely create supabase client (Agar key na mile toh app crash na kare)
+if supabase_url and supabase_key:
+    try:
+        supabase: Client = create_client(supabase_url, supabase_key)
+    except Exception as e:
+        print("Supabase Init Error:", e)
+        supabase = None
+else:
+    supabase = None
 
 def internet_search(query):
     if not query or len(query.strip()) < 2:
@@ -72,15 +81,11 @@ def chat():
         if not user_message and not image_data_url:
             return jsonify({"error": "Message or image required"}), 400
 
-        # ==============================================================
-        # 🌟 FEATURE 1: SMART DAILY LIMIT (50 chats/day, per logged-in user)
-        # ==============================================================
-        # NOTE: Limit sirf "default_user" (not logged-in) aur logged-in
-        # emails par lagta hai. ADMIN_EMAIL ke liye koi limit nahi.
         ADMIN_EMAIL = "ratankumarmetha@gmail.com"
         DAILY_CHAT_LIMIT = 50
 
-        if user_id != ADMIN_EMAIL:
+        # ✅ FIX 2: Supabase check add kiya hai. Agar DB connect nahi hai tab bhi chat chalegi.
+        if supabase and user_id != ADMIN_EMAIL:
             try:
                 today_start = datetime.datetime.utcnow().date().isoformat()
                 user_chats = supabase.table("chat_history") \
@@ -105,9 +110,6 @@ def chat():
             except Exception as limit_err:
                 print(f"Limit Check Error: {limit_err}")
 
-        # ==============================================================
-        # 🌟 FEATURE 2: API KEY ROTATION
-        # ==============================================================
         api_keys = [
             os.getenv("GEMINI_API_KEY"),
             os.getenv("GEMINI_API_KEY_2"),
@@ -119,31 +121,27 @@ def chat():
         if valid_keys:
             selected_key = random.choice(valid_keys)
             
-        # ✅ FIX: Naye SDK ke hisaab se Client initialize kiya gaya hai
         client = genai.Client(api_key=selected_key)
 
-        # ==============================================================
-        # 🌟 FEATURE 3: MEMORY (Pichli baatein yaad rakhna)
-        # ==============================================================
         past_history_context = ""
-        try:
-            history_response = supabase.table("chat_history") \
-                .select("message, reply") \
-                .eq("user_id", user_id) \
-                .order("id", desc=True) \
-                .limit(5) \
-                .execute()
-                
-            if history_response.data:
-                past_history_context = "[PAST CONVERSATION CONTEXT]\n"
-                for row in reversed(history_response.data):
-                    past_msg = row.get("message", "").replace("\n", " ")
-                    past_reply = row.get("reply", "").replace("\n", " ")
-                    if past_msg and past_reply and past_msg != "[Image Sent]":
-                        past_history_context += f"User: {past_msg}\nMehta AI: {past_reply}\n\n"
-        except Exception as hist_err:
-            print(f"History fetch error: {hist_err}")
-        # ==============================================================
+        if supabase:
+            try:
+                history_response = supabase.table("chat_history") \
+                    .select("message, reply") \
+                    .eq("user_id", user_id) \
+                    .order("id", desc=True) \
+                    .limit(5) \
+                    .execute()
+                    
+                if history_response.data:
+                    past_history_context = "[PAST CONVERSATION CONTEXT]\n"
+                    for row in reversed(history_response.data):
+                        past_msg = row.get("message", "").replace("\n", " ")
+                        past_reply = row.get("reply", "").replace("\n", " ")
+                        if past_msg and past_reply and past_msg != "[Image Sent]":
+                            past_history_context += f"User: {past_msg}\nMehta AI: {past_reply}\n\n"
+            except Exception as hist_err:
+                print(f"History fetch error: {hist_err}")
             
         search_context = ""
         if user_message and not image_data_url:
@@ -177,7 +175,6 @@ def chat():
                 
             try:
                 image_bytes = base64.b64decode(encoded.strip())
-                # ✅ FIX: Image bhejne ka naya tarika
                 content_parts.append(
                     types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
                 )
@@ -195,7 +192,6 @@ def chat():
             
         content_parts.append(final_prompt)
         
-        # ✅ FIX: AI se response lene ka naya tarika (Naya SDK call)
         response = client.models.generate_content(
             model='gemini-2.0-flash',
             contents=content_parts,
@@ -208,18 +204,20 @@ def chat():
         
         print(f"BACKUP LOG - User: {user_id} | Client Msg: {user_message} | AI Reply: {clean_reply}")
         
-        try:
-            supabase.table("chat_history").insert({
-                "user_id": user_id,
-                "message": user_message if user_message else "[Image Sent]",
-                "reply": clean_reply
-            }).execute()
-        except Exception as db_err:
-            print(f"Database Save Error: {db_err}")
+        if supabase:
+            try:
+                supabase.table("chat_history").insert({
+                    "user_id": user_id,
+                    "message": user_message if user_message else "[Image Sent]",
+                    "reply": clean_reply
+                }).execute()
+            except Exception as db_err:
+                print(f"Database Save Error: {db_err}")
             
         return jsonify({"reply": clean_reply})
         
     except Exception as e:
+        print(f"Chat Error: {str(e)}")
         return jsonify({"reply": f"Server Error: {str(e)}"}), 500
 
 if __name__ == "__main__":
