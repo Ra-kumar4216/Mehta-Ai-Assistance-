@@ -3,7 +3,6 @@ import base64
 import re
 import requests
 import datetime  
-import random  
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from google import genai              
@@ -13,15 +12,10 @@ from supabase import create_client, Client
 app = Flask(__name__)
 CORS(app)
 
-# API Keys Configuration
-api_key = os.getenv("GEMINI_API_KEY")
-
-# ✅ FIX 1: Supabase ke variables jo aapne Vercel me dale the (NEXT_PUBLIC_) 
-# unhe bhi add kar diya hai taaki "NoneType" error se server crash (500) na ho.
+# Supabase Configuration
 supabase_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
 
-# Safely create supabase client (Agar key na mile toh app crash na kare)
 if supabase_url and supabase_key:
     try:
         supabase: Client = create_client(supabase_url, supabase_key)
@@ -84,7 +78,6 @@ def chat():
         ADMIN_EMAIL = "ratankumarmetha@gmail.com"
         DAILY_CHAT_LIMIT = 50
 
-        # ✅ FIX 2: Supabase check add kiya hai. Agar DB connect nahi hai tab bhi chat chalegi.
         if supabase and user_id != ADMIN_EMAIL:
             try:
                 today_start = datetime.datetime.utcnow().date().isoformat()
@@ -109,19 +102,6 @@ def chat():
                     }), 429
             except Exception as limit_err:
                 print(f"Limit Check Error: {limit_err}")
-
-        api_keys = [
-            os.getenv("GEMINI_API_KEY"),
-            os.getenv("GEMINI_API_KEY_2"),
-            os.getenv("GEMINI_API_KEY_3")
-        ]
-        valid_keys = [key for key in api_keys if key]
-        selected_key = api_key # default fallback
-        
-        if valid_keys:
-            selected_key = random.choice(valid_keys)
-            
-        client = genai.Client(api_key=selected_key)
 
         past_history_context = ""
         if supabase:
@@ -156,11 +136,6 @@ def chat():
             "CRITICAL LANGUAGE RULE: You MUST respond in the EXACT same language as the [CURRENT QUESTION]. "
             "Do NOT get influenced by the language of the [PAST CONVERSATION CONTEXT]. "
             "You have strict expertise in 5 languages: English, Hindi, Hinglish, Tamil, and Telugu. "
-            "- If the [CURRENT QUESTION] is in English, reply purely in English. "
-            "- If the [CURRENT QUESTION] is in Hindi, reply purely in Hindi. "
-            "- If the [CURRENT QUESTION] is in Hinglish, reply naturally in Hinglish. "
-            "- If the [CURRENT QUESTION] is in Tamil (தமிழ்), reply fluently in Tamil. "
-            "- If the [CURRENT QUESTION] is in Telugu (తెలుగు), reply fluently in Telugu. "
             "Always adapt to the user's preferred language instantly."
         )
         
@@ -175,9 +150,7 @@ def chat():
                 
             try:
                 image_bytes = base64.b64decode(encoded.strip())
-                content_parts.append(
-                    types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
-                )
+                content_parts.append(types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
             except Exception as b64_err:
                 print(f"Base64 Decode Error: {b64_err}")
 
@@ -191,18 +164,52 @@ def chat():
             final_prompt += "[CURRENT QUESTION]\nLook at this image carefully and tell me who or what is inside it."
             
         content_parts.append(final_prompt)
+
+        # ==============================================================
+        # 🌟 FEATURE: SEQUENTIAL API KEY FALLBACK (1 -> 2 -> 3 -> 4)
+        # ==============================================================
+        api_keys = [
+            os.getenv("GEMINI_API_KEY"),
+            os.getenv("GEMINI_API_KEY_2"),
+            os.getenv("GEMINI_API_KEY_3"),
+            os.getenv("GEMINI_API_KEY_4") # ✅ Chauthi key bhi add kar di
+        ]
         
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=content_parts,
-            config=types.GenerateContentConfig(
-                system_instruction=base_instruction
-            )
-        )
+        # Jo keys khali (None) nahi hain, unhe ek list mein daal lo
+        valid_keys = [key for key in api_keys if key]
         
-        clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', response.text).strip()
+        if not valid_keys:
+            return jsonify({"reply": "Server Configuration Error: Koi API key nahi mili."}), 500
+
+        ai_response = None
+        last_error = ""
+
+        # Loop har key ko ek-ek karke try karega
+        for key in valid_keys:
+            try:
+                client = genai.Client(api_key=key)
+                ai_response = client.models.generate_content(
+                    model='gemini-2.0-flash',
+                    contents=content_parts,
+                    config=types.GenerateContentConfig(
+                        system_instruction=base_instruction
+                    )
+                )
+                # Agar reply mil gaya toh loop se bahar aa jao (Agli key test nahi hogi)
+                break
+            except Exception as e:
+                # Agar error aaya (jaise limit over), toh agle loop me agli key try hogi
+                print(f"Key fail hui, agli try kar rahe hain... Error: {e}")
+                last_error = str(e)
+                continue
+
+        # Agar chaaro ki chaaro keys fail ho jayein:
+        if not ai_response:
+            return jsonify({"reply": "⚠️ Server Error: Sabhi API keys ki daily limit khatam ho chuki hai."}), 500
         
-        print(f"BACKUP LOG - User: {user_id} | Client Msg: {user_message} | AI Reply: {clean_reply}")
+        # ==============================================================
+
+        clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', ai_response.text).strip()
         
         if supabase:
             try:
