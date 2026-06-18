@@ -6,7 +6,8 @@ import datetime
 import random  
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import google.generativeai as genai
+from google import genai              # ✅ Naya Package Import
+from google.genai import types        # ✅ Naya Package Types
 from supabase import create_client, Client
 
 app = Flask(__name__)
@@ -14,7 +15,7 @@ CORS(app)
 
 # API Keys Configuration
 api_key = os.getenv("GEMINI_API_KEY")
-genai.configure(api_key=api_key)
+# genai.configure() yahan se hata diya hai, ab client function ke andar banega
 
 # Supabase Configuration
 supabase_url = os.getenv("SUPABASE_URL")
@@ -113,9 +114,13 @@ def chat():
             os.getenv("GEMINI_API_KEY_3")
         ]
         valid_keys = [key for key in api_keys if key]
+        selected_key = api_key # default fallback
+        
         if valid_keys:
             selected_key = random.choice(valid_keys)
-            genai.configure(api_key=selected_key)
+            
+        # ✅ FIX: Naye SDK ke hisaab se Client initialize kiya gaya hai
+        client = genai.Client(api_key=selected_key)
 
         # ==============================================================
         # 🌟 FEATURE 3: MEMORY (Pichli baatein yaad rakhna)
@@ -161,12 +166,6 @@ def chat():
             "Always adapt to the user's preferred language instantly."
         )
         
-        # ✅ FIX: model name "gemini-3.5-flash" → "gemini-2.0-flash" (jo exist karta hai)
-        model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
-            system_instruction=base_instruction
-        )
-        
         content_parts = []
         if image_data_url:
             if "base64," in image_data_url:
@@ -178,10 +177,10 @@ def chat():
                 
             try:
                 image_bytes = base64.b64decode(encoded.strip())
-                content_parts.append({
-                    "mime_type": mime_type,
-                    "data": image_bytes
-                })
+                # ✅ FIX: Image bhejne ka naya tarika
+                content_parts.append(
+                    types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+                )
             except Exception as b64_err:
                 print(f"Base64 Decode Error: {b64_err}")
 
@@ -196,7 +195,15 @@ def chat():
             
         content_parts.append(final_prompt)
         
-        response = model.generate_content(content_parts)
+        # ✅ FIX: AI se response lene ka naya tarika (Naya SDK call)
+        response = client.models.generate_content(
+            model='gemini-2.0-flash',
+            contents=content_parts,
+            config=types.GenerateContentConfig(
+                system_instruction=base_instruction
+            )
+        )
+        
         clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', response.text).strip()
         
         print(f"BACKUP LOG - User: {user_id} | Client Msg: {user_message} | AI Reply: {clean_reply}")
