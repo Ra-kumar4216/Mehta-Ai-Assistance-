@@ -315,6 +315,7 @@
 <div class="login-wrapper">
     <div id="user-display" class="welcome-text" style="display:none;"></div>
     <div class="right-controls">
+        <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark Mode">🌙</button>
         <button class="clear-btn" onclick="clearChatHistory()">🗑️ Clear Chat</button>
         <button id="google-login-btn" class="google-btn" style="display:none;">
             <svg width="16" height="16" viewBox="0 0 48 48">
@@ -348,8 +349,35 @@
         <input type="text" id="user-input" placeholder="Type or speak..." onkeypress="if(event.key==='Enter') sendMessage()" autocomplete="off">
         <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
     </div>
-</div>
+</div> 
+
+    <style>
+/* ── Dark Mode Theme ── */
+body.dark-mode { background: #111827; color: #f3f4f6; }
+body.dark-mode .chat-container { background: #1f2937; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
+body.dark-mode .message.bot { background: #374151; color: #f3f4f6; }
+body.dark-mode .message.user { background: #3b82f6; color: #ffffff; }
+body.dark-mode .chat-input-area { background: #1f2937; border-top: 1px solid #374151; }
+body.dark-mode input[type="text"] { background: #374151; color: #f3f4f6; }
+body.dark-mode .login-wrapper { border-bottom: 1px solid #374151; }
+.theme-toggle-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; margin-right: 15px; transition: transform 0.3s; }
+.theme-toggle-btn:hover { transform: scale(1.1); }
+</style>
+    
+    
     <script>
+        // ── Theme Toggle Logic ──
+function toggleTheme() {
+    document.body.classList.toggle("dark-mode");
+    const isDark = document.body.classList.contains("dark-mode");
+    localStorage.setItem("mehta_theme", isDark ? "dark" : "light");
+    document.getElementById("theme-toggle-btn").innerText = isDark ? "☀️" : "🌙";
+}
+if (localStorage.getItem("mehta_theme") === "dark") {
+    document.body.classList.add("dark-mode");
+    setTimeout(() => document.getElementById("theme-toggle-btn").innerText = "☀️", 100);
+}
+        
 // ── Supabase Init ──────────────────────────────────────────
 const supabaseUrl = "https://wrnzwubsaxiizxeppmac.supabase.co";
 const supabaseKey = "sb_publishable_eRF6OFvUXFwwHNRiv1sO4g_yAGoJt2O";
