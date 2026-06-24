@@ -271,6 +271,6 @@ def chat():
     except Exception as e:
         print(f"Chat Error: {str(e)}")
         return jsonify({"reply": f"Server Error: {str(e)}"}), 500
+app = app
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+
