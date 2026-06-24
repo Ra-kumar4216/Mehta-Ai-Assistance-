@@ -5,8 +5,6 @@ import requests
 import datetime  
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from google import genai              
-from google.genai import types        
 from supabase import create_client, Client
 
 app = Flask(__name__)
@@ -103,33 +101,18 @@ def chat():
             except Exception as limit_err:
                 print(f"Limit Check Error: {limit_err}")
 
+        # ==============================================================
+        # 🌟 GROQ API CONFIGURATION (Gemini hata diya gaya hai)
+        # ==============================================================
+        groq_api_key = os.getenv("GROQ_API_KEY")
+        if not groq_api_key:
+            return jsonify({"reply": "Server Configuration Error: GROQ_API_KEY nahi mili."}), 500
+
         past_history_context = ""
-        if supabase:
-            try:
-                history_response = supabase.table("chat_history") \
-                    .select("message, reply") \
-                    .eq("user_id", user_id) \
-                    .order("id", desc=True) \
-                    .limit(5) \
-                    .execute()
-                    
-                if history_response.data:
-                    past_history_context = "[PAST CONVERSATION CONTEXT]\n"
-                    for row in reversed(history_response.data):
-                        past_msg = row.get("message", "").replace("\n", " ")
-                        past_reply = row.get("reply", "").replace("\n", " ")
-                        if past_msg and past_reply and past_msg != "[Image Sent]":
-                            past_history_context += f"User: {past_msg}\nMehta AI: {past_reply}\n\n"
-            except Exception as hist_err:
-                print(f"History fetch error: {hist_err}")
-            
-        search_context = ""
-        if user_message and not image_data_url:
-            search_context = internet_search(user_message)
-            
-        today_date = datetime.datetime.now().strftime("%d %B %Y")
+        messages_payload = []
         
-        base_instruction = (
+        today_date = datetime.datetime.now().strftime("%d %B %Y")
+        system_instruction = (
             f"You are Mehta AI, a highly accurate and updated assistant for 2026. Today is {today_date}. "
             "Your top priority is to look at the attached image carefully and identify the people or things inside it. "
             "Do NOT talk about Narendra Modi unless he is actually visible in the image. "
@@ -138,79 +121,75 @@ def chat():
             "You have strict expertise in 5 languages: English, Hindi, Hinglish, Tamil, and Telugu. "
             "Always adapt to the user's preferred language instantly."
         )
-        
-        content_parts = []
-        if image_data_url:
-            if "base64," in image_data_url:
-                header, encoded = image_data_url.split("base64,", 1)
-                mime_type = header.split(";")[0].split(":")[1] if ":" in header else "image/jpeg"
-            else:
-                encoded = image_data_url
-                mime_type = "image/jpeg"
-                
-            try:
-                image_bytes = base64.b64decode(encoded.strip())
-                content_parts.append(types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
-            except Exception as b64_err:
-                print(f"Base64 Decode Error: {b64_err}")
+        messages_payload.append({"role": "system", "content": system_instruction})
 
-        final_prompt = past_history_context
-        
-        if search_context:
-            final_prompt += f"[REAL-TIME INTERNET DATA]:\n{search_context}\n\n[CURRENT QUESTION]\nUser: {user_message}"
-        elif user_message:
-            final_prompt += f"[CURRENT QUESTION]\nUser: {user_message}"
-        else:
-            final_prompt += "[CURRENT QUESTION]\nLook at this image carefully and tell me who or what is inside it."
+        if supabase:
+            try:
+                history_response = supabase.table("chat_history") \
+                    .select("message, reply") \
+                    .eq("user_id", user_id) \
+                    .order("id", desc=True) \
+                    .limit(4) \
+                    .execute()
+                    
+                if history_response.data:
+                    for row in reversed(history_response.data):
+                        past_msg = row.get("message", "").replace("\n", " ")
+                        past_reply = row.get("reply", "").replace("\n", " ")
+                        if past_msg and past_reply and past_msg != "[Image Sent]":
+                            messages_payload.append({"role": "user", "content": past_msg})
+                            messages_payload.append({"role": "assistant", "content": past_reply})
+            except Exception as hist_err:
+                print(f"History fetch error: {hist_err}")
             
-        content_parts.append(final_prompt)
+        search_context = ""
+        if user_message and not image_data_url:
+            search_context = internet_search(user_message)
+            
+        final_text_prompt = ""
+        if search_context:
+            final_text_prompt += f"[REAL-TIME INTERNET DATA]:\n{search_context}\n\n"
+        final_text_prompt += f"[CURRENT QUESTION]\nUser: {user_message if user_message else 'Analyze this image.'}"
 
+        current_content = [{"type": "text", "text": final_text_prompt}]
+
+        if image_data_url:
+            if not image_data_url.startswith("data:image"):
+                image_data_url = f"data:image/jpeg;base64,{image_data_url}"
+            current_content.append({
+                "type": "image_url",
+                "image_url": {"url": image_data_url}
+            })
+
+        messages_payload.append({"role": "user", "content": current_content})
+        
+        # ✅ Select Model (Vision for images, Llama-3 70B for text)
+        model_name = "llama-3.2-11b-vision-preview" if image_data_url else "llama-3.3-70b-versatile"
+
+        headers = {
+            "Authorization": f"Bearer {groq_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": model_name,
+            "messages": messages_payload,
+            "temperature": 0.7,
+            "max_tokens": 1024
+        }
+
+        # Requesting Groq API
+        response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
+
+        if response.status_code != 200:
+            print(f"Groq Error: {response.text}")
+            return jsonify({"reply": f"⚠️ API Error: Server issue. ({response.status_code})"}), 500
+
+        response_data = response.json()
+        clean_reply = response_data['choices'][0]['message']['content'].strip()
+        clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', clean_reply).strip()
         # ==============================================================
-        # 🌟 FEATURE: SEQUENTIAL API KEY FALLBACK (1 -> 2 -> 3 -> 4)
-        # ==============================================================
-        api_keys = [
-            os.getenv("GEMINI_API_KEY"),
-            os.getenv("GEMINI_API_KEY_2"),
-            os.getenv("GEMINI_API_KEY_3"),
-            os.getenv("GEMINI_API_KEY_4") # ✅ Chauthi key bhi add kar di
-        ]
-        
-        # Jo keys khali (None) nahi hain, unhe ek list mein daal lo
-        valid_keys = [key for key in api_keys if key]
-        
-        if not valid_keys:
-            return jsonify({"reply": "Server Configuration Error: Koi API key nahi mili."}), 500
 
-        ai_response = None
-        last_error = ""
-
-        # Loop har key ko ek-ek karke try karega
-        for key in valid_keys:
-            try:
-                client = genai.Client(api_key=key)
-                ai_response = client.models.generate_content(
-                    model='gemini-2.0-flash',
-                    contents=content_parts,
-                    config=types.GenerateContentConfig(
-                        system_instruction=base_instruction
-                    )
-                )
-                # Agar reply mil gaya toh loop se bahar aa jao (Agli key test nahi hogi)
-                break
-            except Exception as e:
-                # Agar error aaya (jaise limit over), toh agle loop me agli key try hogi
-                print(f"Key fail hui, agli try kar rahe hain... Error: {e}")
-                last_error = str(e)
-                continue
-
-        # Agar chaaro ki chaaro keys fail ho jayein:
-        if not ai_response:
-            return jsonify({"reply": "⚠️ Server Error: Sabhi API keys ki daily limit khatam ho chuki hai."}), 500
-        
-        # ==============================================================
-
-        clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', ai_response.text).strip()
-        
         if supabase:
             try:
                 supabase.table("chat_history").insert({
