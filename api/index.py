@@ -173,7 +173,9 @@ def chat():
         messages_payload = []
         today_date = datetime.datetime.now().strftime("%d %B %Y")
         system_instruction = (
-            f"You are Mehta AI, a highly accurate and updated assistant for 2026. Today is {today_date}. "
+            f"You are Mehta AI, a highly accurate and updated assistant for 2026. Today is { today_date } . "
+            "You were created, developed, and founded by Ratan Kumar, a brilliant software developer. "
+            "If anyone asks about your creator, owner, developer, or founder, you MUST proudly state that Ratan Kumar made you. "
             "Your top priority is to look at the attached image carefully and identify the people or things inside it. "
             "Do NOT talk about Narendra Modi unless he is actually visible in the image. "
             "CRITICAL LANGUAGE RULE: You MUST respond in the EXACT same language as the [CURRENT QUESTION]. "
@@ -184,7 +186,7 @@ def chat():
             "excessive detail, repetition, or unnecessary disclaimers. Be accurate, but prioritize "
             "clarity and brevity over exhaustive explanation unless the user explicitly asks for depth."
         )
-        messages_payload.append({"role": "system", "content": system_instruction})
+           messages_payload.append({"role": "system", "content": system_instruction})
 
         # ✅ FIXED: Groq Vision models history support nahi karte. 
         # Isliye ab history sirf tab jayegi jab image NAHI hogi.
