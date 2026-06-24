@@ -24,12 +24,15 @@ else:
     supabase = None
 
 # ✅ Models ab env se aate hain, hardcode nahi.
-# Groq jab bhi koi model deprecate kare, sirf Vercel env variable update karo, code touch nahi karna.
 TEXT_MODEL_PRIMARY = os.getenv("GROQ_TEXT_MODEL", "openai/gpt-oss-120b")
 TEXT_MODEL_FALLBACK = os.getenv("GROQ_TEXT_MODEL_FALLBACK", "qwen/qwen3.6-27b")
 
 VISION_MODEL_PRIMARY = os.getenv("GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
 VISION_MODEL_FALLBACK = os.getenv("GROQ_VISION_MODEL_FALLBACK", "qwen/qwen3.6-27b")
+
+# ✅ Owner ka email — isko unlimited access milega, baaki sabke liye 50/24hr limit
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "ratankumarmetha@gmail.com")
+DAILY_LIMIT = 50
 
 def internet_search(query):
     if not query or len(query.strip()) < 2:
@@ -77,6 +80,57 @@ def call_groq(messages_payload, model_name, groq_api_key):
     except Exception as e:
         return None, {"message": str(e)}
 
+def check_and_increment_limit(user_id):
+    """
+    Returns (allowed: bool, reset_at_iso: str or None)
+    Owner (ADMIN_EMAIL) is always allowed.
+    Other users get DAILY_LIMIT requests per 24hr rolling window, tracked in Supabase.
+    Fail-open: agar Supabase/DB error aaye to block nahi karte.
+    """
+    if user_id == ADMIN_EMAIL:
+        return True, None
+
+    if not supabase:
+        # DB nahi hai to limit track nahi kar sakte — fail-open
+        return True, None
+
+    try:
+        now = datetime.datetime.utcnow()
+        row = supabase.table("chat_limits").select("*").eq("user_id", user_id).execute()
+
+        if row.data:
+            record = row.data[0]
+            reset_at_str = record.get("reset_at")
+            reset_at = datetime.datetime.fromisoformat(reset_at_str) if reset_at_str else None
+
+            if not reset_at or now >= reset_at:
+                # Window expired ya pehli baar — reset karo
+                new_reset = (now + datetime.timedelta(hours=24)).isoformat()
+                supabase.table("chat_limits").update({
+                    "count": 1,
+                    "reset_at": new_reset
+                }).eq("user_id", user_id).execute()
+                return True, None
+            elif record.get("count", 0) >= DAILY_LIMIT:
+                return False, reset_at_str
+            else:
+                supabase.table("chat_limits").update({
+                    "count": record.get("count", 0) + 1
+                }).eq("user_id", user_id).execute()
+                return True, None
+        else:
+            new_reset = (now + datetime.timedelta(hours=24)).isoformat()
+            supabase.table("chat_limits").insert({
+                "user_id": user_id,
+                "count": 1,
+                "reset_at": new_reset
+            }).execute()
+            return True, None
+    except Exception as limit_err:
+        print(f"Limit check error: {limit_err}")
+        # fail-open: error aaye to block mat karo
+        return True, None
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
     try:
@@ -103,9 +157,14 @@ def chat():
             return jsonify({"error": "Message or image required"}), 400
 
         # ====================================================================
-        # ✅ LIMIT COMPLETELY REMOVED HERE
-        # Har user ke liye unlimited free access. Koi 50 chat ki limit nahi.
+        # ✅ DAILY LIMIT: Owner (ADMIN_EMAIL) unlimited, baaki sab 50/24hr
         # ====================================================================
+        allowed, reset_at = check_and_increment_limit(user_id)
+        if not allowed:
+            return jsonify({
+                "reply": "⚠️ Daily limit (50 chats) khatam ho gaya. 24 ghante baad try karein.",
+                "reset_at": reset_at
+            }), 429
 
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
