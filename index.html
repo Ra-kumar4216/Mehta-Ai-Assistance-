@@ -349,352 +349,304 @@
         <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
     </div>
 </div>
+    <script>
+// ── Supabase Init ──────────────────────────────────────────
+const supabaseUrl = "https://wrnzwubsaxiizxeppmac.supabase.co";
+const supabaseKey = "sb_publishable_eRF6OFvUXFwwHNRiv1sO4g_yAGoJt2O";
+const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-<script>
-    // ── Supabase Init ──────────────────────────────────────────
-    const supabaseUrl  = "https://wrnzwubsaxiizxeppmac.supabase.co";
-    const supabaseKey  = "sb_publishable_eRF6OFvUXFwwHNRiv1sO4g_yAGoJt2O";
-    const _supabase    = supabase.createClient(supabaseUrl, supabaseKey);
+let loggedInUserId = "default_user";
+let dailyLimitReached = false;
 
-    let loggedInUserId = "default_user";
+function applyLimitUIFromServer(resetAtIso, message) {
+    dailyLimitReached = true;
+    const input = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+    input.classList.add("limit-reached");
+    input.disabled = true;
+    sendBtn.disabled = true;
+    input.placeholder = message || "⚠️ Daily limit (50 chats) khatam ho gaya. 24 ghante baad try karein.";
+}
 
-    // ── Daily Limit Config ───────────────────────────────────────
-    const DAILY_LIMIT = 50;
-    let dailyLimitReached = false;
-    let dailyLimitResetTime = null;
+function resetLimitUI() {
+    dailyLimitReached = false;
+    const input = document.getElementById("user-input");
+    const sendBtn = document.getElementById("send-btn");
+    input.classList.remove("limit-reached");
+    input.disabled = false;
+    sendBtn.disabled = false;
+    input.placeholder = "Type or speak...";
+}
 
-    function getLimitStorageKey() { return "mehta_limit_" + loggedInUserId; }
+// ── UI Helpers ─────────────────────────────────────────────
+function updateLoginUI(user) {
+    const userDisplay = document.getElementById('user-display');
+    const loginBtn = document.getElementById('google-login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
 
-    function checkLocalLimitState() {
-        const raw = localStorage.getItem(getLimitStorageKey());
-        if (!raw) return { count: 0, resetAt: null };
-        try {
-            const data = JSON.parse(raw);
-            if (data.resetAt && Date.now() >= data.resetAt) {
-                localStorage.removeItem(getLimitStorageKey());
-                return { count: 0, resetAt: null };
-            }
-            return data;
-        } catch (e) {
-            return { count: 0, resetAt: null };
+    if (user) {
+        userDisplay.style.display = 'block';
+        userDisplay.innerText = `👋 ${user.user_metadata.full_name || user.email}`;
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'block';
+        loggedInUserId = user.email;
+    } else {
+        userDisplay.style.display = 'none';
+        loginBtn.style.display = 'flex';
+        logoutBtn.style.display = 'none';
+        loggedInUserId = "default_user";
+    }
+    resetLimitUI();
+}
+
+function revealApp() {
+    document.getElementById('auth-loading').classList.add('hidden');
+    document.body.classList.add('auth-ready');
+}
+
+// ── Auth Gate ────────────────────────────────────────────────
+let authCheckDone = false;
+_supabase.auth.onAuthStateChange((event, session) => {
+    if (session && session.user) {
+        updateLoginUI(session.user);
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+            loadChatHistory();
         }
-    }
-
-    function formatTimeRemaining(resetAt) {
-        const diff = resetAt - Date.now();
-        if (diff <= 0) return null;
-        const hrs = Math.floor(diff / (1000 * 60 * 60));
-        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        return `${hrs}h ${mins}m`;
-    }
-
-    function applyLimitUIFromServer(resetAtIso) {
-        dailyLimitReached = true;
-        dailyLimitResetTime = new Date(resetAtIso).getTime();
-        localStorage.setItem(getLimitStorageKey(), JSON.stringify({
-            count: DAILY_LIMIT,
-            resetAt: dailyLimitResetTime
-        }));
-        updateLimitInputUI();
-    }
-
-    function updateLimitInputUI() {
-        const input = document.getElementById("user-input");
-        const sendBtn = document.getElementById("send-btn");
-        const state = checkLocalLimitState();
-
-        if (state.resetAt && Date.now() < state.resetAt) {
-            dailyLimitReached = true;
-            dailyLimitResetTime = state.resetAt;
-            const timeLeft = formatTimeRemaining(state.resetAt);
-            input.classList.add("limit-reached");
-            input.disabled = true;
-            input.placeholder = `⚠️ Daily limit (50 chats) khatam ho gaya. ${timeLeft} baad try karein.`;
-            sendBtn.disabled = true;
-        } else {
-            dailyLimitReached = false;
-            input.classList.remove("limit-reached");
-            input.disabled = false;
-            input.placeholder = "Type or speak...";
-            sendBtn.disabled = false;
-        }
-    }
-
-    // Live countdown update every minute
-    setInterval(() => {
-        if (dailyLimitReached) {
-            const state = checkLocalLimitState();
-            if (!state.resetAt || Date.now() >= state.resetAt) {
-                updateLimitInputUI();
-            } else {
-                const timeLeft = formatTimeRemaining(state.resetAt);
-                document.getElementById("user-input").placeholder = `⚠️ Daily limit (50 chats) khatam ho gaya. ${timeLeft} baad try karein.`;
-            }
-        }
-    }, 60000);
-
-    // ── UI Helpers ─────────────────────────────────────────────
-    function updateLoginUI(user) {
-        const userDisplay   = document.getElementById('user-display');
-        const loginBtn      = document.getElementById('google-login-btn');
-        const logoutBtn     = document.getElementById('logout-btn');
-
-        if (user) {
-            userDisplay.style.display = 'block';
-            userDisplay.innerText     = `👋 ${user.user_metadata.full_name || user.email}`;
-            loginBtn.style.display    = 'none';
-            logoutBtn.style.display   = 'block';
-            loggedInUserId            = user.email;
-        } else {
-            userDisplay.style.display = 'none';
-            loginBtn.style.display    = 'flex';
-            logoutBtn.style.display   = 'none';
-            loggedInUserId            = "default_user";
-        }
-        updateLimitInputUI();
-    }
-
-    function revealApp() {
-        document.getElementById('auth-loading').classList.add('hidden');
-        document.body.classList.add('auth-ready');
-    }
-
-    // ── Auth Gate ────────────────────────────────────────────────
-    // Bina login ke chat UI kabhi nahi dikhega. Agar session nahi hai,
-    // turant signin.html pe redirect — koi flash, koi bypass nahi.
-    let authCheckDone = false;
-
-    _supabase.auth.onAuthStateChange((event, session) => {
-        if (session && session.user) {
-            updateLoginUI(session.user);
-            if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-                loadChatHistory();
-            }
-            authCheckDone = true;
-            revealApp();
-        } else {
-            if (event === 'INITIAL_SESSION' || authCheckDone === false) {
-                // Login nahi hai — chat UI bilkul nahi dikhayenge, seedha redirect
-                window.location.replace('signin.html');
-                return;
-            }
-            // Agar already app khula tha aur beech mein sign-out hua (e.g. logout click)
-            updateLoginUI(null);
+        authCheckDone = true;
+        revealApp();
+    } else {
+        if (event === 'INITIAL_SESSION' || authCheckDone === false) {
             window.location.replace('signin.html');
+            return;
         }
-    });
-
-    // Safety net: agar 4 second mein auth state ka pata na chale (network slow),
-    // tab bhi signin pe bhej do — chat kabhi unauthenticated state mein open na rahe
-    setTimeout(() => {
-        if (!authCheckDone) {
-            window.location.replace('signin.html');
-        }
-    }, 4000);
-
-    // ── Google Login ───────────────────────────────────────────
-    document.getElementById('google-login-btn').addEventListener('click', async () => {
-        await _supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: window.location.origin + '/index.html' }
-        });
-    });
-
-    async function handleLogout() {
-        await _supabase.auth.signOut();
+        updateLoginUI(null);
         window.location.replace('signin.html');
     }
+});
 
-    // ── Voice Input ────────────────────────────────────────────
-    let recognition = null;
-    let isRecording = false;
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.onstart  = () => { isRecording = true;  if (!dailyLimitReached) document.getElementById("user-input").placeholder = "🎙️ Listening..."; };
-        recognition.onresult = (e) => { document.getElementById("user-input").value = e.results[0][0].transcript; };
-        recognition.onerror  = () => stopRecording();
-        recognition.onend    = () => stopRecording();
+setTimeout(() => {
+    if (!authCheckDone) {
+        window.location.replace('signin.html');
     }
-    function stopRecording() { isRecording = false; if (!dailyLimitReached) document.getElementById("user-input").placeholder = "Type or speak..."; }
-    function toggleVoiceInput() { if (dailyLimitReached) return; if (recognition) { isRecording ? recognition.stop() : recognition.start(); } }
+}, 4000);
 
-    // ── Image Handling ─────────────────────────────────────────
-    let selectedBase64Image = null;
-
-    function handleImageSelect() {
-        const file = document.getElementById("image-input").files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            document.getElementById("img-preview").src = e.target.result;
-            document.getElementById("preview-area").style.display = "flex";
-            selectedBase64Image = e.target.result.split(',')[1];
-        };
-        reader.readAsDataURL(file);
-    }
-    function clearImage() {
-        document.getElementById("image-input").value = "";
-        document.getElementById("preview-area").style.display = "none";
-        selectedBase64Image = null;
-    }
-
-    // ── Chat History (localStorage) ────────────────────────────
-    const chatBox = document.getElementById("chat-box");
-
-    function getStorageKey() { return "mehta_chat_history_" + loggedInUserId; }
-
-    function saveMessageToHistory(sender, text, image = null) {
-        let history = JSON.parse(localStorage.getItem(getStorageKey())) || [];
-        history.push({ sender, text, image });
-        if (history.length > 100) history = history.slice(-100);
-        localStorage.setItem(getStorageKey(), JSON.stringify(history));
-    }
-
-    function loadChatHistory() {
-        let history = JSON.parse(localStorage.getItem(getStorageKey())) || [];
-        if (history.length === 0) return;
-        chatBox.innerHTML = "";
-        history.forEach(item => {
-            const div = document.createElement("div");
-            div.className = `message ${item.sender}`;
-            if (item.image) {
-                const img = document.createElement("img");
-                img.src = `data:image/jpeg;base64,${item.image}`;
-                img.className = "chat-image";
-                div.appendChild(img);
-            }
-            if (item.sender === "bot") renderMarkdownWithActions(item.text, div);
-            else {
-                const span = document.createElement("span");
-                span.textContent = item.text;
-                div.appendChild(span);
-            }
-            chatBox.appendChild(div);
-        });
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function clearChatHistory() {
-        if (confirm("Pura chat history delete karna hai?")) {
-            localStorage.removeItem(getStorageKey());
-            chatBox.innerHTML = '<div class="message bot">✨ Hello! I\'m Mehta, your intelligent assistant. Ask me anything!</div>';
+// ── Google Login ───────────────────────────────────────────
+document.getElementById('google-login-btn').addEventListener('click', async () => {
+    await _supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: window.location.origin + '/index.html'
         }
+    });
+});
+
+async function handleLogout() {
+    await _supabase.auth.signOut();
+    window.location.replace('signin.html');
+}
+
+// ── Voice Input ────────────────────────────────────────────
+let recognition = null;
+let isRecording = false;
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.onstart = () => {
+        isRecording = true;
+        if (!dailyLimitReached) document.getElementById("user-input").placeholder = "🎙️ Listening...";
+    };
+    recognition.onresult = (e) => {
+        document.getElementById("user-input").value = e.results[0][0].transcript;
+    };
+    recognition.onerror = () => stopRecording();
+    recognition.onend = () => stopRecording();
+}
+
+function stopRecording() {
+    isRecording = false;
+    if (!dailyLimitReached) document.getElementById("user-input").placeholder = "Type or speak...";
+}
+
+function toggleVoiceInput() {
+    if (dailyLimitReached) return;
+    if (recognition) {
+        isRecording ? recognition.stop() : recognition.start();
     }
+}
 
-    // ── Markdown Rendering ──────────────────────────────────────
-    function copyToClipboard(text, btnEl, isCode = false) {
-        navigator.clipboard.writeText(text).then(() => {
-            btnEl.innerText = "✓ Copied!";
-            setTimeout(() => { btnEl.innerText = isCode ? "Copy Code 📋" : "Copy 📋"; }, 1800);
-        });
-    }
+// ── Image Handling ─────────────────────────────────────────
+let selectedBase64Image = null;
 
-    function renderMarkdownWithActions(replyText, botDiv) {
-        botDiv.innerHTML = marked.parse(replyText);
-        botDiv.querySelectorAll("pre").forEach(pre => {
-            const wrapper = document.createElement("div");
-            wrapper.className = "code-container";
-            pre.parentNode.insertBefore(wrapper, pre);
-            wrapper.appendChild(pre);
-            const copyBtn = document.createElement("button");
-            copyBtn.className = "code-copy-btn";
-            copyBtn.innerText = "Copy Code 📋";
-            copyBtn.onclick = () => copyToClipboard(pre.innerText, copyBtn, true);
-            wrapper.appendChild(copyBtn);
-        });
-        const actionsDiv = document.createElement("div");
-        actionsDiv.className = "bot-actions";
-        const copyMsgBtn = document.createElement("button");
-        copyMsgBtn.className = "copy-btn";
-        copyMsgBtn.innerText = "Copy 📋";
-        copyMsgBtn.onclick = () => copyToClipboard(replyText, copyMsgBtn, false);
-        actionsDiv.appendChild(copyMsgBtn);
-        botDiv.appendChild(actionsDiv);
-    }
+function handleImageSelect() {
+    const file = document.getElementById("image-input").files[0];
+    if (!file) return;
 
-    // ── Send Message ───────────────────────────────────────────
-    async function sendMessage() {
-        if (dailyLimitReached) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById("img-preview").src = e.target.result;
+        document.getElementById("preview-area").style.display = "flex";
+        selectedBase64Image = e.target.result.split(',')[1];
+    };
+    reader.readAsDataURL(file);
+}
 
-        const inputField = document.getElementById("user-input");
-        const msg = inputField.value.trim();
-        if (!msg && !selectedBase64Image) return;
+function clearImage() {
+    document.getElementById("image-input").value = "";
+    document.getElementById("preview-area").style.display = "none";
+    selectedBase64Image = null;
+}
 
-        // User bubble
-        const userDiv = document.createElement("div");
-        userDiv.className = "message user";
-        if (selectedBase64Image) {
+// ── Chat History (localStorage) ────────────────────────────
+const chatBox = document.getElementById("chat-box");
+
+function getStorageKey() {
+    return "mehta_chat_history_" + loggedInUserId;
+}
+
+function saveMessageToHistory(sender, text, image = null) {
+    let history = JSON.parse(localStorage.getItem(getStorageKey())) || [];
+    history.push({ sender, text, image });
+    if (history.length > 100) history = history.slice(-100);
+    localStorage.setItem(getStorageKey(), JSON.stringify(history));
+}
+
+function loadChatHistory() {
+    let history = JSON.parse(localStorage.getItem(getStorageKey())) || [];
+    if (history.length === 0) return;
+    chatBox.innerHTML = "";
+    history.forEach(item => {
+        const div = document.createElement("div");
+        div.className = `message ${item.sender}`;
+        if (item.image) {
             const img = document.createElement("img");
-            img.src = `data:image/jpeg;base64,${selectedBase64Image}`;
+            img.src = `data:image/jpeg;base64,${item.image}`;
             img.className = "chat-image";
-            userDiv.appendChild(img);
+            div.appendChild(img);
         }
-        if (msg) {
+        if (item.sender === "bot") renderMarkdownWithActions(item.text, div);
+        else {
             const span = document.createElement("span");
-            span.textContent = msg;
-            userDiv.appendChild(span);
+            span.textContent = item.text;
+            div.appendChild(span);
         }
-        chatBox.appendChild(userDiv);
+        chatBox.appendChild(div);
+    });
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
 
-        const imgPayload = selectedBase64Image;
-        inputField.value = "";
-        clearImage();
-        saveMessageToHistory("user", msg, imgPayload);
-
-        // Thinking bubble
-        const botDiv = document.createElement("div");
-        botDiv.className = "message bot";
-        botDiv.innerHTML = `<span class="thinking-dots">Mehta is thinking</span>`;
-        chatBox.appendChild(botDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-
-        try {
-            const res = await fetch("/api/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    message: msg,
-                    image: imgPayload ? `data:image/jpeg;base64,${imgPayload}` : null,
-                    user_id: loggedInUserId
-                })
-            });
-            const data = await res.json();
-
-            if (res.status === 429) {
-                // Daily limit khatam — server ne bataya
-                botDiv.remove();
-                if (data.reset_at) {
-                    applyLimitUIFromServer(data.reset_at);
-                } else {
-                    // Fallback: agar server reset_at na bheje, 24hr se calculate karo
-                    applyLimitUIFromServer(new Date(Date.now() + 24*60*60*1000).toISOString());
-                }
-                return;
-            }
-
-            if (!res.ok) {
-                botDiv.innerHTML = `<span style="color:#fca5a5;">⚠️ ${data.error || "Server Error"}</span>`;
-            } else {
-                renderMarkdownWithActions(data.reply, botDiv);
-                saveMessageToHistory("bot", data.reply);
-
-                // Local count badhao (UI ke liye tracking, server hi source of truth hai)
-                const state = checkLocalLimitState();
-                const newCount = (state.count || 0) + 1;
-                let resetAt = state.resetAt;
-                if (!resetAt) resetAt = Date.now() + 24*60*60*1000;
-                localStorage.setItem(getLimitStorageKey(), JSON.stringify({ count: newCount, resetAt }));
-
-                if (newCount >= DAILY_LIMIT) {
-                    applyLimitUIFromServer(new Date(resetAt).toISOString());
-                }
-            }
-        } catch (e) {
-            botDiv.innerHTML = `<span style="color:#fca5a5;">⚠️ Network Error! Check your connection.</span>`;
-        }
-        chatBox.scrollTop = chatBox.scrollHeight;
+function clearChatHistory() {
+    if (confirm("Pura chat history delete karna hai?")) {
+        localStorage.removeItem(getStorageKey());
+        chatBox.innerHTML = '<div class="message bot">✨ Hello! I\'m Mehta, your intelligent assistant. Ask me anything!</div>';
     }
+}
+
+// ── Markdown Rendering ──────────────────────────────────────
+function copyToClipboard(text, btnEl, isCode = false) {
+    navigator.clipboard.writeText(text).then(() => {
+        btnEl.innerText = "✓ Copied!";
+        setTimeout(() => {
+            btnEl.innerText = isCode ? "Copy Code 📋" : "Copy 📋";
+        }, 1800);
+    });
+}
+
+function renderMarkdownWithActions(replyText, botDiv) {
+    botDiv.innerHTML = marked.parse(replyText);
+    botDiv.querySelectorAll("pre").forEach(pre => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "code-container";
+        pre.parentNode.insertBefore(wrapper, pre);
+        wrapper.appendChild(pre);
+
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "code-copy-btn";
+        copyBtn.innerText = "Copy Code 📋";
+        copyBtn.onclick = () => copyToClipboard(pre.innerText, copyBtn, true);
+        wrapper.appendChild(copyBtn);
+    });
+
+    const actionsDiv = document.createElement("div");
+    actionsDiv.className = "bot-actions";
+    
+    const copyMsgBtn = document.createElement("button");
+    copyMsgBtn.className = "copy-btn";
+    copyMsgBtn.innerText = "Copy 📋";
+    copyMsgBtn.onclick = () => copyToClipboard(replyText, copyMsgBtn, false);
+    actionsDiv.appendChild(copyMsgBtn);
+    
+    botDiv.appendChild(actionsDiv);
+}
+
+// ── Send Message ───────────────────────────────────────────
+async function sendMessage() {
+    if (dailyLimitReached) return;
+
+    const inputField = document.getElementById("user-input");
+    const msg = inputField.value.trim();
+    if (!msg && !selectedBase64Image) return;
+
+    const userDiv = document.createElement("div");
+    userDiv.className = "message user";
+
+    if (selectedBase64Image) {
+        const img = document.createElement("img");
+        img.src = `data:image/jpeg;base64,${selectedBase64Image}`;
+        img.className = "chat-image";
+        userDiv.appendChild(img);
+    }
+    if (msg) {
+        const span = document.createElement("span");
+        span.textContent = msg;
+        userDiv.appendChild(span);
+    }
+
+    chatBox.appendChild(userDiv);
+    const imgPayload = selectedBase64Image;
+
+    inputField.value = "";
+    clearImage();
+    saveMessageToHistory("user", msg, imgPayload);
+
+    const botDiv = document.createElement("div");
+    botDiv.className = "message bot";
+    botDiv.innerHTML = `<span class="thinking-dots">Mehta is thinking</span>`;
+    chatBox.appendChild(botDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    try {
+        const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                message: msg,
+                image: imgPayload ? `data:image/jpeg;base64,${imgPayload}` : null,
+                user_id: loggedInUserId
+            })
+        });
+
+        const data = await res.json();
+        
+        if (res.status === 429) {
+            renderMarkdownWithActions(data.reply, botDiv);
+            applyLimitUIFromServer(data.reset_at, data.reply);
+            return;
+        }
+
+        if (!res.ok) {
+            botDiv.innerHTML = `<span style="color: #fca5a5;">⚠️ ${data.error || "Server Error"}</span>`;
+        } else {
+            renderMarkdownWithActions(data.reply, botDiv);
+            saveMessageToHistory("bot", data.reply);
+        }
+    } catch (e) {
+        botDiv.innerHTML = `<span style="color: #fca5a5;">⚠️ Network Error! Check your connection.</span>`;
+    }
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
 </script>
+
+
 </body>
 </html>
