@@ -73,15 +73,11 @@ def chat():
         if not user_message and not image_data_url:
             return jsonify({"error": "Message or image required"}), 400
 
-        # ==============================================================
-        # 🌟 SMART LIMIT SYSTEM (1 Din ka count, Admin = Unlimited)
-        # ==============================================================
         ADMIN_EMAIL = "ratankumarmetha@gmail.com"
         DAILY_CHAT_LIMIT = 50
 
         if supabase and user_id != ADMIN_EMAIL:
             try:
-                # Sirf aaj ki date ke messages nikalega
                 today_start = datetime.datetime.utcnow().date().isoformat()
                 user_chats = supabase.table("chat_history") \
                     .select("id, created_at") \
@@ -91,7 +87,6 @@ def chat():
                     .execute()
 
                 if len(user_chats.data) >= DAILY_CHAT_LIMIT:
-                    # Agle din raat 12 baje ka time nikalega (Countdown ke liye)
                     tomorrow_utc = datetime.datetime.utcnow().date() + datetime.timedelta(days=1)
                     reset_at = datetime.datetime.combine(
                         tomorrow_utc, datetime.time.min, tzinfo=datetime.timezone.utc
@@ -106,9 +101,6 @@ def chat():
             except Exception as limit_err:
                 print(f"Limit Check Error: {limit_err}")
 
-        # ==============================================================
-        # 🌟 GROQ API CONFIGURATION 
-        # ==============================================================
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
             return jsonify({"reply": "Server Configuration Error: GROQ_API_KEY nahi mili."}), 500
@@ -126,7 +118,9 @@ def chat():
         )
         messages_payload.append({"role": "system", "content": system_instruction})
 
-        if supabase:
+        # ✅ FIXED: Groq Vision models history support nahi karte. 
+        # Isliye ab history sirf tab jayegi jab image NAHI hogi.
+        if not image_data_url and supabase:
             try:
                 history_response = supabase.table("chat_history") \
                     .select("message, reply") \
@@ -152,7 +146,7 @@ def chat():
         final_text_prompt = ""
         if search_context:
             final_text_prompt += f"[REAL-TIME INTERNET DATA]:\n{search_context}\n\n"
-        final_text_prompt += f"[CURRENT QUESTION]\nUser: {user_message if user_message else 'Analyze this image.'}"
+        final_text_prompt += f"[CURRENT QUESTION]\nUser: {user_message if user_message else 'Look at this image carefully and tell me what is inside it.'}"
 
         if image_data_url:
             if not image_data_url.startswith("data:image"):
@@ -162,7 +156,8 @@ def chat():
                 {"type": "image_url", "image_url": {"url": image_data_url}}
             ]
             messages_payload.append({"role": "user", "content": current_content})
-            model_name = "llama-3.2-11b-vision-preview" 
+            # ✅ UPGRADED: Sabse smart 90b vision model
+            model_name = "llama-3.2-90b-vision-preview" 
         else:
             messages_payload.append({"role": "user", "content": final_text_prompt})
             model_name = "llama-3.3-70b-versatile"
