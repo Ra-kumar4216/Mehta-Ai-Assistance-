@@ -23,6 +23,14 @@ if supabase_url and supabase_key:
 else:
     supabase = None
 
+# ✅ Models ab env se aate hain, hardcode nahi.
+# Groq jab bhi koi model deprecate kare, sirf Vercel env variable update karo, code touch nahi karna.
+TEXT_MODEL_PRIMARY = os.getenv("GROQ_TEXT_MODEL", "openai/gpt-oss-120b")
+TEXT_MODEL_FALLBACK = os.getenv("GROQ_TEXT_MODEL_FALLBACK", "qwen/qwen3.6-27b")
+
+VISION_MODEL_PRIMARY = os.getenv("GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
+VISION_MODEL_FALLBACK = os.getenv("GROQ_VISION_MODEL_FALLBACK", "qwen/qwen3.6-27b")
+
 def internet_search(query):
     if not query or len(query.strip()) < 2:
         return ""
@@ -47,6 +55,27 @@ def internet_search(query):
     except Exception as e:
         print(f"Search Error: {e}")
     return ""
+
+def call_groq(messages_payload, model_name, groq_api_key):
+    """Single Groq API call. Returns (response_obj_or_None, error_dict_or_None)."""
+    headers = {
+        "Authorization": f"Bearer {groq_api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": model_name,
+        "messages": messages_payload,
+        "temperature": 0.7,
+        "max_tokens": 1024
+    }
+    try:
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers=headers, json=payload, timeout=30
+        )
+        return response, None
+    except Exception as e:
+        return None, {"message": str(e)}
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
@@ -114,7 +143,10 @@ def chat():
             "CRITICAL LANGUAGE RULE: You MUST respond in the EXACT same language as the [CURRENT QUESTION]. "
             "Do NOT get influenced by the language of the [PAST CONVERSATION CONTEXT]. "
             "You have strict expertise in 5 languages: English, Hindi, Hinglish, Tamil, and Telugu. "
-            "Always adapt to the user's preferred language instantly."
+            "Always adapt to the user's preferred language instantly. "
+            "ANSWER STYLE: Give clear, direct, to-the-point answers. Do NOT pad responses with "
+            "excessive detail, repetition, or unnecessary disclaimers. Be accurate, but prioritize "
+            "clarity and brevity over exhaustive explanation unless the user explicitly asks for depth."
         )
         messages_payload.append({"role": "system", "content": system_instruction})
 
@@ -156,28 +188,30 @@ def chat():
                 {"type": "image_url", "image_url": {"url": image_data_url}}
             ]
             messages_payload.append({"role": "user", "content": current_content})
-            # ✅ UPGRADED: Sabse smart 90b vision model
-            model_name = "llama-3.2-90b-vision-preview" 
+            primary_model = VISION_MODEL_PRIMARY
+            fallback_model = VISION_MODEL_FALLBACK
         else:
             messages_payload.append({"role": "user", "content": final_text_prompt})
-            model_name = "llama-3.3-70b-versatile"
+            primary_model = TEXT_MODEL_PRIMARY
+            fallback_model = TEXT_MODEL_FALLBACK
 
-        headers = {
-            "Authorization": f"Bearer {groq_api_key}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "model": model_name,
-            "messages": messages_payload,
-            "temperature": 0.7,
-            "max_tokens": 1024
-        }
+        # ✅ Try primary model first, agar decommissioned/rate-limited mile to fallback try karo.
+        response, conn_err = call_groq(messages_payload, primary_model, groq_api_key)
+        used_model = primary_model
 
-        response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
+        needs_fallback = conn_err is not None or (response is not None and response.status_code in (400, 404, 429, 500, 503))
+
+        if needs_fallback and fallback_model and fallback_model != primary_model:
+            print(f"Primary model '{primary_model}' failed, trying fallback '{fallback_model}'")
+            response, conn_err = call_groq(messages_payload, fallback_model, groq_api_key)
+            used_model = fallback_model
+
+        if conn_err is not None:
+            print(f"Groq Connection Error: {conn_err}")
+            return jsonify({"reply": "⚠️ AI service abhi response nahi de raha. Thodi der me try karo."}), 500
 
         if response.status_code != 200:
-            print(f"Groq Error: {response.text}")
+            print(f"Groq Error ({used_model}): {response.text}")
             return jsonify({"reply": f"⚠️ API Error: Server issue. ({response.status_code})"}), 500
 
         response_data = response.json()
