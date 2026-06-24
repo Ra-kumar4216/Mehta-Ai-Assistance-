@@ -102,15 +102,13 @@ def chat():
                 print(f"Limit Check Error: {limit_err}")
 
         # ==============================================================
-        # 🌟 GROQ API CONFIGURATION (Gemini hata diya gaya hai)
+        # 🌟 GROQ API CONFIGURATION
         # ==============================================================
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
             return jsonify({"reply": "Server Configuration Error: GROQ_API_KEY nahi mili."}), 500
 
-        past_history_context = ""
         messages_payload = []
-        
         today_date = datetime.datetime.now().strftime("%d %B %Y")
         system_instruction = (
             f"You are Mehta AI, a highly accurate and updated assistant for 2026. Today is {today_date}. "
@@ -151,20 +149,21 @@ def chat():
             final_text_prompt += f"[REAL-TIME INTERNET DATA]:\n{search_context}\n\n"
         final_text_prompt += f"[CURRENT QUESTION]\nUser: {user_message if user_message else 'Analyze this image.'}"
 
-        current_content = [{"type": "text", "text": final_text_prompt}]
-
+        # ✅ FIXED: 400 ERROR YAHI SE AA RAHA THA
         if image_data_url:
+            # Image ke liye array format chahiye
             if not image_data_url.startswith("data:image"):
                 image_data_url = f"data:image/jpeg;base64,{image_data_url}"
-            current_content.append({
-                "type": "image_url",
-                "image_url": {"url": image_data_url}
-            })
-
-        messages_payload.append({"role": "user", "content": current_content})
-        
-        # ✅ Select Model (Vision for images, Llama-3 70B for text)
-        model_name = "llama-3.2-11b-vision-preview" if image_data_url else "llama-3.3-70b-versatile"
+            current_content = [
+                {"type": "text", "text": final_text_prompt},
+                {"type": "image_url", "image_url": {"url": image_data_url}}
+            ]
+            messages_payload.append({"role": "user", "content": current_content})
+            model_name = "llama-3.2-11b-vision-preview" 
+        else:
+            # Bina image ke sirf string format chahiye (isiliye 400 error aaya tha)
+            messages_payload.append({"role": "user", "content": final_text_prompt})
+            model_name = "llama-3.3-70b-versatile"
 
         headers = {
             "Authorization": f"Bearer {groq_api_key}",
