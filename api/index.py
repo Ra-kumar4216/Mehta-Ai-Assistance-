@@ -73,11 +73,15 @@ def chat():
         if not user_message and not image_data_url:
             return jsonify({"error": "Message or image required"}), 400
 
+        # ==============================================================
+        # 🌟 SMART LIMIT SYSTEM (1 Din ka count, Admin = Unlimited)
+        # ==============================================================
         ADMIN_EMAIL = "ratankumarmetha@gmail.com"
         DAILY_CHAT_LIMIT = 50
 
         if supabase and user_id != ADMIN_EMAIL:
             try:
+                # Sirf aaj ki date ke messages nikalega
                 today_start = datetime.datetime.utcnow().date().isoformat()
                 user_chats = supabase.table("chat_history") \
                     .select("id, created_at") \
@@ -87,13 +91,14 @@ def chat():
                     .execute()
 
                 if len(user_chats.data) >= DAILY_CHAT_LIMIT:
+                    # Agle din raat 12 baje ka time nikalega (Countdown ke liye)
                     tomorrow_utc = datetime.datetime.utcnow().date() + datetime.timedelta(days=1)
                     reset_at = datetime.datetime.combine(
                         tomorrow_utc, datetime.time.min, tzinfo=datetime.timezone.utc
                     ).isoformat()
 
                     return jsonify({
-                        "reply": "⚠️ Aapki aaj ki free limit (50 chats) khatam ho gayi hai! Kripya 24 ghante baad dobara try karein.",
+                        "reply": "⚠️ Your limit is expire re try after 24 hr.",
                         "error": "daily_limit_reached",
                         "reset_at": reset_at,
                         "limit": DAILY_CHAT_LIMIT
@@ -102,7 +107,7 @@ def chat():
                 print(f"Limit Check Error: {limit_err}")
 
         # ==============================================================
-        # 🌟 GROQ API CONFIGURATION
+        # 🌟 GROQ API CONFIGURATION 
         # ==============================================================
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
@@ -149,9 +154,7 @@ def chat():
             final_text_prompt += f"[REAL-TIME INTERNET DATA]:\n{search_context}\n\n"
         final_text_prompt += f"[CURRENT QUESTION]\nUser: {user_message if user_message else 'Analyze this image.'}"
 
-        # ✅ FIXED: 400 ERROR YAHI SE AA RAHA THA
         if image_data_url:
-            # Image ke liye array format chahiye
             if not image_data_url.startswith("data:image"):
                 image_data_url = f"data:image/jpeg;base64,{image_data_url}"
             current_content = [
@@ -161,7 +164,6 @@ def chat():
             messages_payload.append({"role": "user", "content": current_content})
             model_name = "llama-3.2-11b-vision-preview" 
         else:
-            # Bina image ke sirf string format chahiye (isiliye 400 error aaya tha)
             messages_payload.append({"role": "user", "content": final_text_prompt})
             model_name = "llama-3.3-70b-versatile"
 
@@ -177,7 +179,6 @@ def chat():
             "max_tokens": 1024
         }
 
-        # Requesting Groq API
         response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
 
         if response.status_code != 200:
@@ -187,7 +188,6 @@ def chat():
         response_data = response.json()
         clean_reply = response_data['choices'][0]['message']['content'].strip()
         clean_reply = re.sub(r'<think>[\s\S]*?</think>', '', clean_reply).strip()
-        # ==============================================================
 
         if supabase:
             try:
