@@ -211,7 +211,7 @@ def chat():
             
         search_context = ""
         if user_message and not image_data_url:
-            search_context = internet_search(user_message)
+            search_context = ""
             
         final_text_prompt = ""
         if search_context:
