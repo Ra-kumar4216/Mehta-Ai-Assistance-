@@ -26,8 +26,8 @@ else:
 # ✅ Models
 TEXT_MODEL_PRIMARY = os.getenv("GROQ_TEXT_MODEL", "openai/gpt-oss-120b")
 TEXT_MODEL_FALLBACK = os.getenv("GROQ_TEXT_MODEL_FALLBACK", "qwen/qwen3.6-27b")
-VISION_MODEL_PRIMARY = os.getenv("GROQ_VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
-VISION_MODEL_FALLBACK = os.getenv("GROQ_VISION_MODEL_FALLBACK", "qwen/qwen3.6-27b")
+VISION_MODEL_PRIMARY = os.getenv("GROQ_VISION_MODEL", "llama-3.2-90b-vision-preview")
+VISION_MODEL_FALLBACK = os.getenv("GROQ_VISION_MODEL_FALLBACK", "llama-3.2-11b-vision-preview")
 
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "ratankumarmetha@gmail.com")
 DAILY_LIMIT = 50
