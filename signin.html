@@ -42,7 +42,7 @@
     z-index: 1;
   }
   .logo-wrap { display: flex; justify-content: center; margin-bottom: 6px; }
-  .logo-wrap img { height: 52px; width: auto; }
+  .logo-wrap img { height: 52px; width: auto; animation: logoShift 2s ease-in-out infinite; }
   .tagline { text-align: center; color: rgba(255,255,255,0.45); font-size: 13px; margin-top: 4px; margin-bottom: 26px; letter-spacing: 0.3px; }
 
   .tabs { display: flex; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 3px; margin-bottom: 22px; gap: 3px; }
@@ -98,6 +98,12 @@
 
   @media (max-width: 380px) {
     .card { padding: 28px 20px; border-radius: 20px; }
+  }
+
+  @keyframes logoShift {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
   }
 </style>
 </head>
