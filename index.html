@@ -303,6 +303,552 @@
         }
         .right-controls { display: flex; gap: 8px; align-items: center; }
     </style>
+
+    <style id="mehta-theme-redesign">
+        :root {
+            color-scheme: light;
+            --primary: #111827;
+            --primary-hover: #000000;
+            --page-bg: #ffffff;
+            --page-glow: #f4f6fb;
+            --surface: #ffffff;
+            --surface-subtle: #f7f8fb;
+            --surface-muted: #f1f3f7;
+            --border: #e6e8ee;
+            --border-strong: #d5d9e2;
+            --text: #111827;
+            --text-soft: #667085;
+            --text-faint: #98a2b3;
+            --bubble-bot: #f5f6f8;
+            --bubble-user: #111827;
+            --bubble-user-text: #ffffff;
+            --shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
+        }
+
+        html { background: var(--page-bg); }
+        body {
+            min-height: 100dvh;
+            padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+            gap: 12px;
+            background: var(--page-bg);
+            color: var(--text);
+            transition: background-color .25s ease, color .25s ease;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            background: radial-gradient(circle at 50% -20%, var(--page-glow), transparent 52%);
+        }
+        body.dark-mode {
+            color-scheme: dark;
+            --primary: #ffffff;
+            --primary-hover: #e5e7eb;
+            --page-bg: #050505;
+            --page-glow: #111111;
+            --surface: #0c0c0d;
+            --surface-subtle: #111113;
+            --surface-muted: #171719;
+            --border: #29292d;
+            --border-strong: #3a3a40;
+            --text: #f5f5f5;
+            --text-soft: #a1a1aa;
+            --text-faint: #71717a;
+            --bubble-bot: #151517;
+            --bubble-user: #f5f5f5;
+            --bubble-user-text: #09090b;
+            --shadow: 0 28px 80px rgba(0, 0, 0, .52);
+            background: var(--page-bg);
+        }
+        body.dark-mode::before { background: radial-gradient(circle at 50% -20%, #151515, transparent 55%); }
+
+        .brand-logo { margin-bottom: 2px; }
+        .brand-logo img { height: 38px; }
+        .login-wrapper {
+            max-width: 860px;
+            margin-bottom: 0;
+            padding: 0 2px;
+            min-height: 42px;
+        }
+        .right-controls { gap: 8px; }
+        .welcome-text, .clear-btn, .theme-toggle-btn, .logout-btn, .google-btn,
+        .attach-btn, .mic-btn {
+            transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
+        }
+        .welcome-text {
+            color: var(--text-soft);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 8px 13px;
+            font-size: .82rem;
+        }
+        .clear-btn {
+            color: var(--text-soft);
+            background: var(--surface);
+            border-color: var(--border);
+        }
+        .clear-btn:hover, .theme-toggle-btn:hover, .attach-btn:hover, .mic-btn:hover { 
+            background: var(--surface-muted);
+            border-color: var(--border-strong);
+            color: var(--text);
+            transform: translateY(-1px);
+        }
+        .theme-toggle-btn {
+            width: 38px;
+            height: 34px;
+            margin-right: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+            color: var(--text);
+            font-size: 1.15rem;
+            line-height: 1;
+        }
+        .logout-btn {
+            color: #b42318;
+            background: #fff5f4;
+            border-color: #fecdca;
+        }
+        .dark-mode .logout-btn { color: #fda29b; background: #291313; border-color: #5c2525; }
+        .chat-container {
+            width: min(100%, 860px);
+            height: min(780px, calc(100dvh - 122px));
+            min-height: 520px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            backdrop-filter: none;
+        }
+        .chat-header {
+            min-height: 62px;
+            padding: 14px 22px;
+            color: var(--text);
+            background: var(--surface);
+            border-bottom-color: var(--border);
+        }
+        .chat-messages {
+            padding: 28px clamp(16px, 5vw, 58px);
+            gap: 16px;
+            background: var(--surface);
+        }
+        .chat-messages::-webkit-scrollbar-thumb { background: var(--border-strong); }
+        .message {
+            max-width: min(78%, 640px);
+            padding: 13px 16px;
+            border-radius: 18px;
+            font-size: .95rem;
+        }
+        .user {
+            background: var(--bubble-user);
+            color: var(--bubble-user-text);
+            border-bottom-right-radius: 6px;
+        }
+        .bot {
+            background: var(--bubble-bot);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 6px;
+        }
+        .code-container { background: #0b0b0c; border-color: #303036; }
+        .bot pre { background: #0b0b0c !important; }
+        .code-copy-btn, .copy-btn {
+            background: rgba(255,255,255,.08);
+            border-color: rgba(255,255,255,.16);
+            color: #d4d4d8;
+        }
+        .preview-container {
+            padding: 12px 20px;
+            background: var(--surface-subtle);
+            border-top-color: var(--border);
+        }
+        .chat-input-area {
+            padding: 14px 18px max(18px, env(safe-area-inset-bottom));
+            background: var(--surface);
+            border-top-color: var(--border);
+        }
+        input[type="text"] {
+            min-width: 0;
+            background: var(--surface-subtle);
+            border-color: var(--border);
+            color: var(--text);
+        }
+        input[type="text"]:focus { border-color: var(--text); box-shadow: 0 0 0 3px rgba(127,127,127,.14); }
+        input[type="text"]::placeholder { color: var(--text-faint); }
+        .attach-btn, .mic-btn {
+            background: var(--surface-subtle);
+            border-color: var(--border);
+            color: var(--text-soft);
+        }
+        button.send-btn {
+            min-height: 48px;
+            padding: 12px 22px;
+            background: var(--bubble-user);
+            color: var(--bubble-user-text);
+        }
+        button.send-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        button.send-btn:disabled { background: var(--surface-muted); color: var(--text-faint); }
+
+        @media (max-width: 700px) {
+            body { justify-content: flex-start; padding-top: max(12px, env(safe-area-inset-top)); gap: 8px; }
+            .brand-logo img { height: 34px; }
+            .login-wrapper { width: 100%; align-items: flex-start; }
+            .welcome-text { max-width: 43vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .right-controls { flex-wrap: wrap; justify-content: flex-end; }
+            .clear-btn { font-size: .75rem; padding: 7px 10px; }
+            .chat-container { height: calc(100dvh - 104px); min-height: 0; border-radius: 20px; }
+            .chat-header { min-height: 54px; padding: 12px 16px; font-size: 1rem; }
+            .chat-messages { padding: 18px 12px; gap: 12px; }
+            .message { max-width: 91%; font-size: .92rem; padding: 12px 14px; }
+            .chat-input-area { gap: 7px; padding: 10px 10px max(12px, env(safe-area-inset-bottom)); }
+            .attach-btn, .mic-btn { width: 42px; height: 42px; font-size: 1rem; }
+            input[type="text"] { min-height: 42px; padding: 11px 13px; font-size: .93rem; }
+            button.send-btn { min-height: 42px; padding: 10px 15px; }
+        }
+        @media (max-width: 430px) {
+            .login-wrapper { min-height: 76px; }
+            .welcome-text { max-width: 48vw; }
+            .right-controls { gap: 5px; }
+            .logout-btn { padding: 6px 9px; font-size: .74rem; }
+            .clear-btn { width: 34px; height: 34px; padding: 0; font-size: 0; }
+            .clear-btn::after { content: "⌫"; font-size: 1rem; }
+            .chat-container { height: calc(100dvh - 138px); }
+            .chat-input-area { flex-wrap: wrap; }
+            input[type="text"] { order: 1; flex-basis: calc(100% - 98px); }
+            .send-btn { order: 1; flex: 1; }
+            .attach-btn, .mic-btn { order: 2; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+        }
+    </style>
+
+
+    <style id="mehta-minimal-style">
+        /* Minimalist Mehta.ai layout. */
+        :root {
+            --mehta-page: #ffffff;
+            --mehta-surface: #ffffff;
+            --mehta-subtle: #f5f5f4;
+            --mehta-border: #e5e5e3;
+            --mehta-text: #1f1f1d;
+            --mehta-muted: #787875;
+            --mehta-faint: #a2a29d;
+            --mehta-user: #f0f0ee;
+            --mehta-accent: #151513;
+            --mehta-shadow: 0 4px 18px rgba(28, 28, 25, .08);
+        }
+        body {
+            align-items: stretch;
+            justify-content: flex-start;
+            gap: 0;
+            padding: 16px clamp(14px, 3vw, 28px) 18px;
+            background: var(--mehta-page);
+            color: var(--mehta-text);
+        }
+        body::before { display: none; }
+        body.dark-mode {
+            --mehta-page: #0a0a09;
+            --mehta-surface: #0d0d0c;
+            --mehta-subtle: #181817;
+            --mehta-border: #2b2b28;
+            --mehta-text: #f2f2ef;
+            --mehta-muted: #a1a19b;
+            --mehta-faint: #777771;
+            --mehta-user: #20201e;
+            --mehta-accent: #f2f2ef;
+            --mehta-shadow: 0 8px 30px rgba(0,0,0,.25);
+            background: var(--mehta-page);
+        }
+        .brand-logo {
+            width: min(100%, 860px);
+            margin: 0 auto 10px;
+            min-height: 34px;
+            justify-content: flex-start;
+        }
+        .brand-logo img { height: 32px; }
+        .login-wrapper {
+            width: min(100%, 860px);
+            max-width: none;
+            margin: 0 auto;
+            padding: 0;
+            min-height: 38px;
+        }
+        .welcome-text {
+            font-size: .78rem;
+            padding: 7px 11px;
+            color: var(--mehta-muted);
+            background: var(--mehta-surface);
+            border-color: var(--mehta-border);
+        }
+        .right-controls { gap: 7px; }
+        .theme-toggle-btn, .clear-btn, .logout-btn {
+            height: 34px;
+            border-radius: 10px;
+            color: var(--mehta-muted);
+            background: transparent;
+            border: 1px solid transparent;
+        }
+        .theme-toggle-btn { width: 34px; border-color: var(--mehta-border); }
+        .clear-btn { padding: 6px 10px; border-color: var(--mehta-border); font-size: .75rem; }
+        .logout-btn { padding: 6px 10px; color: var(--mehta-muted); border-color: var(--mehta-border); background: transparent; font-size: .75rem; }
+        .theme-toggle-btn:hover, .clear-btn:hover, .logout-btn:hover {
+            color: var(--mehta-text);
+            background: var(--mehta-subtle);
+            border-color: var(--mehta-border);
+            transform: none;
+        }
+        .chat-container {
+            width: min(100%, 860px);
+            height: calc(100dvh - 94px);
+            min-height: 0;
+            margin: 0 auto;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: visible;
+        }
+        .chat-header { display: none; }
+        .chat-messages {
+            height: 100%;
+            padding: 28px clamp(4px, 7vw, 86px) 164px;
+            gap: 18px;
+            background: transparent;
+            scrollbar-width: thin;
+        }
+        .message {
+            max-width: 680px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            line-height: 1.58;
+            font-size: .96rem;
+            box-shadow: none;
+        }
+        .user {
+            background: var(--mehta-user);
+            color: var(--mehta-text);
+            border: 1px solid var(--mehta-border);
+            border-bottom-right-radius: 5px;
+        }
+        .bot {
+            background: transparent;
+            color: var(--mehta-text);
+            border: 0;
+            border-bottom-left-radius: 0;
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+        .bot-actions { right: 4px; }
+        .preview-container {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 148px;
+            padding: 10px 14px;
+            border: 1px solid var(--mehta-border);
+            border-radius: 14px;
+            background: var(--mehta-surface);
+            box-shadow: var(--mehta-shadow);
+        }
+        .chat-input-area {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: block;
+            padding: 12px 14px 10px;
+            background: var(--mehta-surface);
+            border: 1px solid var(--mehta-border);
+            border-radius: 18px;
+            box-shadow: var(--mehta-shadow);
+        }
+        .composer-topline, .composer-footer, .composer-row { display: flex; align-items: center; }
+        .composer-topline { justify-content: space-between; min-height: 28px; margin-bottom: 8px; gap: 10px; }
+        .chat-input-area input[type="text"]:focus { border: 0; box-shadow: none; }
+        .chat-input-area input[type="text"]::placeholder { color: var(--mehta-faint); }
+        .attach-btn, .mic-btn, .send-btn {
+            flex: 0 0 auto;
+            width: 38px;
+            height: 38px;
+            min-height: 38px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 11px;
+            font-size: 1.25rem;
+            line-height: 1;
+        }
+        .attach-btn, .mic-btn {
+            background: transparent;
+            border: 0;
+            color: var(--mehta-muted);
+        }
+        .attach-btn:hover, .mic-btn:hover { background: var(--mehta-subtle); color: var(--mehta-text); transform: none; }
+        .send-btn {
+            background: var(--mehta-accent);
+            border: 0;
+            color: var(--mehta-page);
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        .send-btn:hover { background: var(--mehta-text); transform: translateY(-1px); }
+        .send-btn:disabled { background: var(--mehta-subtle); color: var(--mehta-faint); }
+        .composer-footer {
+            justify-content: space-between;
+            gap: 12px;
+            padding: 9px 2px 0;
+            color: var(--mehta-faint);
+            font-size: .67rem;
+        }
+        .composer-model { color: var(--mehta-muted); font-weight: 600; white-space: nowrap; }
+        .dark-mode .code-container { border-color: var(--mehta-border); }
+        @media (max-width: 700px) {
+            body { padding: 12px 10px max(12px, env(safe-area-inset-bottom)); }
+            .brand-logo { margin-bottom: 6px; }
+            .brand-logo img { height: 28px; }
+            .login-wrapper { min-height: 36px; }
+            .chat-container { height: calc(100dvh - 78px); }
+            .chat-messages { padding: 20px 2px 184px; gap: 14px; }
+            .message { max-width: 94%; font-size: .93rem; }
+            .chat-input-area { padding: 10px 10px 9px; border-radius: 16px; }
+            .composer-state { display: none; }
+            .composer-footer { font-size: .62rem; }
+            .chat-input-area input[type="text"] { font-size: .94rem; }
+        }
+        @media (max-width: 430px) {
+            .welcome-text { max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .clear-btn { width: 32px; padding: 0; font-size: 0; }
+            .clear-btn::after { content: "⌫"; font-size: 1rem; }
+            .logout-btn { padding: 5px 7px; font-size: .68rem; }
+            .right-controls { gap: 4px; }
+            .chat-container { height: calc(100dvh - 118px); }
+            .chat-messages { padding-bottom: 180px; }
+            .composer-footer span:first-child { max-width: 78%; }
+            .composer-model { display: none; }
+            .attach-btn, .mic-btn, .send-btn { width: 34px; height: 34px; min-height: 34px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+        }
+    </style>
+
+
+    <style id="mehta-reference-layout">
+        /* Reference-matched workspace chrome and composer layout. */
+        body {
+            padding: 10px clamp(12px, 3vw, 28px) 14px;
+            background: var(--mehta-page, #ffffff);
+        }
+        .brand-logo { display: none; }
+        .login-wrapper {
+            position: relative;
+            width: min(100%, 980px);
+            min-height: 40px;
+            margin-bottom: 0;
+            align-items: center;
+        }
+        .workspace-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--mehta-text, #1f1f1d);
+            font-size: .87rem;
+            font-weight: 500;
+            letter-spacing: -.01em;
+        }
+        .workspace-caret { color: var(--mehta-muted, #787875); font-size: 1rem; margin-top: -4px; }
+        .plan-pill {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 8px;
+            background: var(--mehta-subtle, #f5f5f4);
+            color: var(--mehta-muted, #787875);
+            font-size: .8rem;
+            white-space: nowrap;
+        }
+        .account-area { margin-left: auto; }
+        .right-controls { gap: 5px; }
+        .right-controls .clear-btn { font-size: 0; width: 34px; padding: 0; }
+        .right-controls .clear-btn::after { content: "⌫"; font-size: 1rem; }
+        .right-controls .logout-btn { font-size: .72rem; }
+        .chat-container {
+            position: relative;
+            width: min(100%, 980px);
+            height: calc(100dvh - 56px);
+            margin-top: 2px;
+        }
+        .chat-messages {
+            height: 100%;
+            padding: 54px clamp(4px, 9vw, 150px) 196px;
+            gap: 20px;
+        }
+        .message { max-width: 100%; }
+        .message.user { align-self: stretch; margin-left: auto; max-width: 620px; }
+        .message.bot { align-self: stretch; }
+        .composer-dock {
+            position: absolute;
+            left: clamp(0px, 3vw, 34px);
+            right: clamp(0px, 3vw, 34px);
+            bottom: 0;
+            z-index: 4;
+        }
+        .usage-status-dot {
+            width: 7px;
+            height: 7px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: #28a269;
+            box-shadow: 0 0 0 4px rgba(40, 162, 105, .10);
+        }
+        .usage-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 46px;
+            padding: 0 12px 0 18px;
+            margin-bottom: 10px;
+            border: 1px solid var(--mehta-border, #e5e5e3);
+            border-radius: 12px;
+            background: var(--mehta-surface, #fff);
+            color: var(--mehta-text, #1f1f1d);
+            font-size: .84rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,.03);
+        }
+        .composer-row { min-height: 42px; }
+        .composer-footer { padding-top: 8px; }
+        .preview-container { bottom: 158px; }
+        @media (max-width: 700px) {
+            body { padding: 8px 10px max(10px, env(safe-area-inset-bottom)); }
+            .login-wrapper { min-height: 38px; }
+            .workspace-switch { font-size: .78rem; }
+            .plan-pill { position: static; transform: none; margin-left: auto; margin-right: 8px; font-size: .7rem; }
+            .account-area { display: none; }
+            .right-controls .logout-btn { display: none !important; }
+            .chat-container { height: calc(100dvh - 58px); }
+            .chat-messages { padding: 28px 2px 210px; }
+            .composer-dock { left: 0; right: 0; }
+            .usage-banner { min-height: 42px; font-size: .74rem; }
+        }
+        @media (max-width: 430px) {
+            .plan-pill { padding: 4px 6px; margin-right: 3px; }
+            .usage-banner { padding-left: 12px; }
+            .usage-banner span { max-width: 68%; }
+            .composer-footer span:first-child { max-width: 100%; }
+        }
+    </style>
+
 </head>
 <body>
 
@@ -313,9 +859,15 @@
 </div>
 
 <div class="login-wrapper">
-    <div id="user-display" class="welcome-text" style="display:none;"></div>
+    <div class="workspace-switch" aria-label="Current workspace">
+        <span>Mehta.ai</span><span class="workspace-caret">⌄</span>
+    </div>
+    <div class="plan-pill"><span>Mehta.ai · Ready</span></div>
+    <div class="account-area">
+        <div id="user-display" class="welcome-text" style="display:none;"></div>
+    </div>
     <div class="right-controls">
-        <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark Mode">🌙</button>
+        <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="toggleTheme()" title="Switch theme" aria-label="Switch to dark mode" aria-pressed="false">☾</button>
         <button class="clear-btn" onclick="clearChatHistory()">🗑️ Clear Chat</button>
         <button id="google-login-btn" class="google-btn" style="display:none;">
             <svg width="16" height="16" viewBox="0 0 48 48">
@@ -342,43 +894,62 @@
         <img src="" id="img-preview" class="preview-img" alt="preview">
         <button class="remove-btn" onclick="clearImage()">✕</button>
     </div>
-    <div class="chat-input-area">
-        <input type="file" id="image-input" accept="image/*" style="display:none;" onchange="handleImageSelect()">
-        <button class="attach-btn" onclick="document.getElementById('image-input').click()">📎</button>
-        <button class="mic-btn" id="mic-button" onclick="toggleVoiceInput()">🎙️</button>
-        <input type="text" id="user-input" placeholder="Type or speak..." onkeypress="if(event.key==='Enter') sendMessage()" autocomplete="off">
-        <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+    <div class="composer-dock">
+        <div class="usage-banner" id="usage-banner">
+            <span>Mehta.ai is ready when you are</span>
+            <span class="usage-status-dot" aria-hidden="true"></span>
+        </div>
+        <div class="chat-input-area">
+            <div class="composer-row">
+                <input type="file" id="image-input" accept="image/*" style="display:none;" onchange="handleImageSelect()">
+                <button class="attach-btn" type="button" title="Attach an image" aria-label="Attach an image" onclick="document.getElementById('image-input').click()">＋</button>
+                <input type="text" id="user-input" placeholder="Write a message..." onkeypress="if(event.key==='Enter') sendMessage()" autocomplete="off">
+                <button class="mic-btn" type="button" id="mic-button" title="Use voice input" aria-label="Use voice input" onclick="toggleVoiceInput()">⌁</button>
+                <button class="send-btn" type="button" id="send-btn" title="Send message" aria-label="Send message" onclick="sendMessage()">↑</button>
+            </div>
+            <div class="composer-footer">
+                <span>Mehta.ai can make mistakes. Please double-check responses.</span>
+                <span class="composer-model">Mehta AI</span>
+            </div>
+        </div>
     </div>
 </div> 
-
-    <style>
-/* ── Dark Mode Theme ── */
-body.dark-mode { background: #111827; color: #f3f4f6; }
-body.dark-mode .chat-container { background: #1f2937; box-shadow: 0 4px 15px rgba(0,0,0,0.8); }
-body.dark-mode .message.bot { background: #374151; color: #f3f4f6; }
-body.dark-mode .message.user { background: #3b82f6; color: #ffffff; }
-body.dark-mode .chat-input-area { background: #1f2937; border-top: 1px solid #374151; }
-body.dark-mode input[type="text"] { background: #374151; color: #f3f4f6; }
-body.dark-mode .login-wrapper { border-bottom: 1px solid #374151; }
-.theme-toggle-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; margin-right: 15px; transition: transform 0.3s; }
-.theme-toggle-btn:hover { transform: scale(1.1); }
-</style>
     
     
     <script>
         // ── Theme Toggle Logic ──
-function toggleTheme() {
-    document.body.classList.toggle("dark-mode");
-    const isDark = document.body.classList.contains("dark-mode");
-    localStorage.setItem("mehta_theme", isDark ? "dark" : "light");
-    document.getElementById("theme-toggle-btn").innerText = isDark ? "☀️" : "🌙";
+const THEME_KEY = "mehta_theme";
+
+function preferredTheme() {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === "light" || saved === "dark") return saved;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
-if (localStorage.getItem("mehta_theme") === "dark") {
-    document.body.classList.add("dark-mode");
-    setTimeout(() => document.getElementById("theme-toggle-btn").innerText = "☀️", 100);
+
+function applyTheme(theme, persist = false) {
+    const isDark = theme === "dark";
+    document.body.classList.toggle("dark-mode", isDark);
+    const toggle = document.getElementById("theme-toggle-btn");
+    if (toggle) {
+        toggle.innerText = isDark ? "☀" : "☾";
+        toggle.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+        toggle.setAttribute("aria-pressed", String(isDark));
+    }
+    if (persist) localStorage.setItem(THEME_KEY, isDark ? "dark" : "light");
+}
+
+function toggleTheme() {
+    applyTheme(document.body.classList.contains("dark-mode") ? "light" : "dark", true);
+}
+
+applyTheme(preferredTheme());
+if (!localStorage.getItem(THEME_KEY) && window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", event => {
+        applyTheme(event.matches ? "dark" : "light");
+    });
 }
         
-// ── Supabase Init ──────────────────────────────────────────
+        // ── Supabase Init ──────────────────────────────────────────
 const supabaseUrl = "https://wrnzwubsaxiizxeppmac.supabase.co";
 const supabaseKey = "sb_publishable_eRF6OFvUXFwwHNRiv1sO4g_yAGoJt2O";
 const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -403,7 +974,7 @@ function resetLimitUI() {
     input.classList.remove("limit-reached");
     input.disabled = false;
     sendBtn.disabled = false;
-    input.placeholder = "Type or speak...";
+    input.placeholder = "Write a message...";
 }
 
 // ── UI Helpers ─────────────────────────────────────────────
@@ -493,7 +1064,7 @@ if (SpeechRecognition) {
 
 function stopRecording() {
     isRecording = false;
-    if (!dailyLimitReached) document.getElementById("user-input").placeholder = "Type or speak...";
+    if (!dailyLimitReached) document.getElementById("user-input").placeholder = "Write a message...";
 }
 
 function toggleVoiceInput() {
