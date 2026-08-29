@@ -671,7 +671,12 @@
         .composer-topline, .composer-footer, .composer-row { display: flex; align-items: center; }
         .composer-topline { justify-content: space-between; min-height: 28px; margin-bottom: 8px; gap: 10px; }
         .chat-input-area input[type="text"]:focus { border: 0; box-shadow: none; }
-        .chat-input-area input[type="text"]::placeholder { color: var(--mehta-faint); }
+        .chat-input-area input[type="text"]::placeholder { color: var(--mehta-faint); font-weight: 600; }
+        .chat-input-area input[type="text"] { font-weight: 700; color: var(--mehta-text) !important; letter-spacing: -.01em; }
+        .mic-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        .mic-btn { flex: 0 0 38px; width: 38px; height: 38px; border: 1px solid var(--mehta-border) !important; border-radius: 50%; background: var(--mehta-subtle) !important; color: var(--mehta-text) !important; }
+        .mic-btn:hover { background: var(--mehta-border) !important; }
+        .mic-btn.is-recording { background: #d94a4a !important; border-color: #d94a4a !important; color: #fff !important; box-shadow: 0 0 0 4px rgba(217,74,74,.14); }
         .attach-btn, .mic-btn, .send-btn {
             flex: 0 0 auto;
             width: 38px;
@@ -924,6 +929,175 @@
         }
     </style>
 
+
+    <style id="mehta-arranged-messages">
+        /* Clean, readable conversation rhythm for user and Mehta AI messages. */
+        .chat-messages {
+            align-items: stretch;
+            gap: 26px;
+            padding-top: 42px;
+            padding-bottom: 196px;
+        }
+        .message {
+            position: relative;
+            width: auto;
+            max-width: 700px;
+            word-break: normal;
+            overflow-wrap: anywhere;
+            line-height: 1.68;
+            letter-spacing: .002em;
+            animation: none !important;
+            opacity: 1 !important;
+        }
+        .message.user {
+            align-self: flex-end;
+            width: fit-content;
+            max-width: min(80%, 680px);
+            margin: 0 0 0 auto;
+            padding: 13px 18px;
+            border: 1px solid var(--mehta-border);
+            border-radius: 18px 18px 6px 18px;
+            background: var(--mehta-user);
+            color: #20201e !important;
+            font-weight: 500;
+            box-shadow: 0 2px 7px rgba(28, 28, 25, .05);
+        }
+        .message.user span {
+            display: block;
+            white-space: pre-wrap;
+        }
+        .message.user img {
+            display: block;
+            max-width: min(100%, 360px);
+            max-height: 260px;
+            margin: 0 0 10px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+        .message.bot {
+            align-self: flex-start;
+            width: min(100%, 700px);
+            max-width: 700px;
+            margin: 0 auto 0 0;
+            padding: 0 4px 46px;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            color: #20201e !important;
+            font-weight: 400;
+        }
+        .message.bot > *:first-child { margin-top: 0; }
+        .message.bot p { margin: 0 0 1em; }
+        .message.bot p:last-of-type { margin-bottom: 0; }
+        .message.bot h1, .message.bot h2, .message.bot h3,
+        .message.bot h4, .message.bot h5, .message.bot h6 {
+            margin: 1.15em 0 .48em;
+            color: inherit !important;
+            font-weight: 750;
+            line-height: 1.25;
+            letter-spacing: -.02em;
+        }
+        .message.bot h1 { font-size: 1.35rem; }
+        .message.bot h2 { font-size: 1.18rem; }
+        .message.bot h3 { font-size: 1.05rem; }
+        .message.bot ul, .message.bot ol {
+            margin: .5em 0 1em;
+            padding-left: 1.45em;
+        }
+        .message.bot li { margin: .32em 0; padding-left: .18em; }
+        .message.bot li > ul, .message.bot li > ol { margin-bottom: .25em; }
+        .message.bot blockquote {
+            margin: 1em 0;
+            padding: .15em 0 .15em 1em;
+            border-left: 3px solid #c4c4bd;
+            color: #55554f !important;
+        }
+        .message.bot a {
+            color: #315f9e !important;
+            text-underline-offset: 3px;
+        }
+        .message.bot strong { font-weight: 750; }
+        .message.bot em { color: #5c5c56 !important; }
+        .message.bot :not(pre) > code {
+            padding: .15em .38em;
+            border: 1px solid var(--mehta-border);
+            border-radius: 5px;
+            background: var(--mehta-subtle);
+            color: #3e4f68 !important;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: .88em;
+        }
+        .message.bot pre {
+            margin: 1em 0;
+            padding: 14px 15px;
+            border: 1px solid var(--mehta-border);
+            border-radius: 12px;
+            background: #151616 !important;
+            color: #eef2f2;
+            line-height: 1.55;
+            box-shadow: 0 3px 12px rgba(0,0,0,.08);
+        }
+        .message.bot pre code {
+            color: #e6eeee !important;
+            font-size: .86rem;
+            white-space: pre;
+        }
+        .message.bot hr {
+            margin: 1.2em 0;
+            border: 0;
+            border-top: 1px solid var(--mehta-border);
+        }
+        .message.bot table {
+            width: 100%;
+            margin: 1em 0;
+            border-collapse: collapse;
+            font-size: .92em;
+        }
+        .message.bot th, .message.bot td {
+            padding: 8px 10px;
+            border: 1px solid var(--mehta-border);
+            text-align: left;
+            vertical-align: top;
+        }
+        .message.bot th { background: var(--mehta-subtle); font-weight: 700; }
+        .bot-actions {
+            right: 4px;
+            bottom: 8px;
+            gap: 6px;
+        }
+        .bot-actions button {
+            min-width: 32px;
+            min-height: 28px;
+            border: 1px solid var(--mehta-border);
+            border-radius: 8px;
+            background: var(--mehta-surface);
+            color: var(--mehta-muted);
+        }
+        .bot-actions button:hover { color: var(--mehta-text); background: var(--mehta-subtle); }
+        .thinking-dots { color: var(--mehta-muted) !important; font-weight: 600; }
+        body.dark-mode .message.user { color: #f2f2ef !important; }
+        body.dark-mode .message.bot,
+        body.dark-mode .message.bot * { color: #f2f2ef !important; }
+        body.dark-mode .message.bot blockquote { color: #b3b3ac !important; border-left-color: #5d5d56; }
+        body.dark-mode .message.bot a { color: #a9c7f4 !important; }
+        body.dark-mode .message.bot em { color: #bdbdb5 !important; }
+        body.dark-mode .message.bot :not(pre) > code { color: #c9ddfb !important; }
+        @media (max-width: 700px) {
+            .chat-messages { gap: 20px; padding-top: 28px; padding-bottom: 210px; }
+            .message.user { max-width: 88%; padding: 12px 15px; }
+            .message.bot { width: 100%; padding-left: 0; padding-right: 0; }
+            .message.bot pre { margin-left: 0; margin-right: 0; border-radius: 10px; }
+            .message.bot table { display: block; overflow-x: auto; white-space: nowrap; }
+        }
+        @media (max-width: 430px) {
+            .message.user { max-width: 92%; font-size: .94rem; }
+            .message.bot { font-size: .96rem; }
+            .message.bot h1 { font-size: 1.2rem; }
+            .message.bot h2 { font-size: 1.08rem; }
+            .message.bot pre code { font-size: .78rem; }
+        }
+    </style>
+
 </head>
 <body>
 
@@ -980,7 +1154,9 @@
                 <input type="file" id="image-input" accept="image/*" style="display:none;" onchange="handleImageSelect()">
                 <button class="attach-btn" type="button" title="Attach an image" aria-label="Attach an image" onclick="document.getElementById('image-input').click()">＋</button>
                 <input type="text" id="user-input" placeholder="Write a message..." onkeypress="if(event.key==='Enter') sendMessage()" autocomplete="off">
-                <button class="mic-btn" type="button" id="mic-button" title="Use voice input" aria-label="Use voice input" onclick="toggleVoiceInput()">⌁</button>
+                <button class="mic-btn" type="button" id="mic-button" title="Use voice input" aria-label="Use voice input" aria-pressed="false" onclick="toggleVoiceInput()">
+                    <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5.5a3 3 0 0 0 3 3Z"></path><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V22M8.5 22h7"></path></svg>
+                </button>
                 <button class="send-btn" type="button" id="send-btn" title="Send message" aria-label="Send message" onclick="sendMessage()">↑</button>
             </div>
             <div class="composer-footer">
@@ -1129,6 +1305,9 @@ if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.onstart = () => {
         isRecording = true;
+        const micButton = document.getElementById("mic-button");
+        micButton?.classList.add("is-recording");
+        micButton?.setAttribute("aria-pressed", "true");
         if (!dailyLimitReached) document.getElementById("user-input").placeholder = "🎙️ Listening...";
     };
     recognition.onresult = (e) => {
@@ -1140,6 +1319,9 @@ if (SpeechRecognition) {
 
 function stopRecording() {
     isRecording = false;
+    const micButton = document.getElementById("mic-button");
+    micButton?.classList.remove("is-recording");
+    micButton?.setAttribute("aria-pressed", "false");
     if (!dailyLimitReached) document.getElementById("user-input").placeholder = "Write a message...";
 }
 
