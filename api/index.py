@@ -26,8 +26,8 @@ else:
 # ✅ Models
 TEXT_MODEL_PRIMARY = os.getenv("GROQ_TEXT_MODEL", "openai/gpt-oss-120b")
 TEXT_MODEL_FALLBACK = os.getenv("GROQ_TEXT_MODEL_FALLBACK", "qwen/qwen3.6-27b")
-VISION_MODEL_PRIMARY = os.getenv("GROQ_VISION_MODEL", "llama-3.2-90b-vision-preview")
-VISION_MODEL_FALLBACK = os.getenv("GROQ_VISION_MODEL_FALLBACK", "llama-3.2-11b-vision-preview")
+VISION_MODEL_PRIMARY = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.8-27b")
+VISION_MODEL_FALLBACK = os.getenv("GROQ_VISION_MODEL_FALLBACK", "qwen/qwen3.6-27b")
 
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "ratankumarmetha@gmail.com")
 DAILY_LIMIT = 50
@@ -145,9 +145,20 @@ def chat():
 
         response, conn_err = call_groq(messages_payload, primary_model, groq_api_key)
         if conn_err or response.status_code != 200:
-            response, _ = call_groq(messages_payload, fallback_model, groq_api_key)
+            response, conn_err = call_groq(messages_payload, fallback_model, groq_api_key)
 
-        reply = response.json()['choices'][0]['message']['content'].strip()
+        if conn_err or response is None:
+            return jsonify({"error": "AI service unreachable right now. Please try again in a moment."}), 502
+
+        if response.status_code != 200:
+            print(f"Groq error {response.status_code}: {response.text[:300]}")
+            return jsonify({"error": "AI model error. Please try again — if this keeps happening, the model ID may need updating."}), 502
+
+        try:
+            reply = response.json()['choices'][0]['message']['content'].strip()
+        except (KeyError, IndexError, ValueError) as parse_err:
+            print(f"Groq response parse error: {parse_err} | body: {response.text[:300]}")
+            return jsonify({"error": "Unexpected response from AI service."}), 502
         
         if supabase:
             supabase.table("chat_history").insert({"user_id": user_id, "message": user_message or "[Image]", "reply": reply}).execute()
