@@ -1861,12 +1861,11 @@ async function sendMessage() {
     try {
         const res = await fetch("/api/chat", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...(await getSessionHeaders()) },
             body: JSON.stringify({
                 message: msg,
                 image: imgPayload ? `data:image/jpeg;base64,${imgPayload}` : null,
-                audio: audioPayload || null,
-                user_id: loggedInUserId
+                audio: audioPayload || null
             })
         });
 
