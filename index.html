@@ -1121,6 +1121,15 @@
         }
     </style>
 
+
+    <style id="mehta-audio-multimodal">
+        .audio-preview-name { min-width: 0; flex: 1; color: var(--mehta-text); font-size: .86rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .audio-attach-btn { font-size: 1rem !important; }
+        .audio-attach-btn:hover { color: var(--mehta-text); background: var(--mehta-subtle); }
+        .chat-audio { display: block; width: min(300px, 100%); max-width: 100%; margin: 0 0 10px; }
+        @media (max-width: 430px) { .audio-preview-name { font-size: .78rem; } .chat-audio { width: 100%; } }
+    </style>
+
 </head>
 <body>
 
@@ -1165,7 +1174,8 @@
     </div>
     <div class="preview-container" id="preview-area">
         <img src="" id="img-preview" class="preview-img" alt="preview">
-        <button class="remove-btn" onclick="clearImage()">✕</button>
+        <span id="audio-preview-name" class="audio-preview-name" hidden></span>
+        <button class="remove-btn" onclick="clearImage()" aria-label="Remove attachment">✕</button>
     </div>
     <div class="composer-dock">
         <div class="usage-banner" id="usage-banner">
@@ -1175,7 +1185,9 @@
         <div class="chat-input-area">
             <div class="composer-row">
                 <input type="file" id="image-input" accept="image/*" style="display:none;" onchange="handleImageSelect()">
+                <input type="file" id="audio-input" accept="audio/*" style="display:none;" onchange="handleAudioSelect()">
                 <button class="attach-btn" type="button" title="Attach an image" aria-label="Attach an image" onclick="document.getElementById('image-input').click()">＋</button>
+                <button class="attach-btn audio-attach-btn" type="button" title="Attach an audio file" aria-label="Attach an audio file" onclick="document.getElementById('audio-input').click()">♫</button>
                 <input type="text" id="user-input" placeholder="Write a message..." onkeypress="if(event.key==='Enter') sendMessage()" autocomplete="off">
                 <button class="mic-btn" type="button" id="mic-button" title="Use voice input" aria-label="Use voice input" aria-pressed="false" onclick="toggleVoiceInput()">
                     <svg class="mic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5.5a3 3 0 0 0 3 3Z"></path><path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V22M8.5 22h7"></path></svg>
@@ -1357,24 +1369,54 @@ function toggleVoiceInput() {
 
 // ── Image Handling ─────────────────────────────────────────
 let selectedBase64Image = null;
+let selectedAudioDataUrl = null;
+let selectedAudioName = "";
 
 function handleImageSelect() {
     const file = document.getElementById("image-input").files[0];
     if (!file) return;
-
+    selectedAudioDataUrl = null;
+    selectedAudioName = "";
+    const audioName = document.getElementById("audio-preview-name");
+    audioName.hidden = true;
+    audioName.textContent = "";
     const reader = new FileReader();
     reader.onload = (e) => {
         document.getElementById("img-preview").src = e.target.result;
+        document.getElementById("img-preview").style.display = "block";
         document.getElementById("preview-area").style.display = "flex";
         selectedBase64Image = e.target.result.split(',')[1];
     };
     reader.readAsDataURL(file);
 }
 
+function handleAudioSelect() {
+    const file = document.getElementById("audio-input").files[0];
+    if (!file) return;
+    selectedBase64Image = null;
+    document.getElementById("img-preview").style.display = "none";
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        selectedAudioDataUrl = e.target.result;
+        selectedAudioName = file.name;
+        const audioName = document.getElementById("audio-preview-name");
+        audioName.textContent = `♫ ${file.name}`;
+        audioName.hidden = false;
+        document.getElementById("preview-area").style.display = "flex";
+    };
+    reader.readAsDataURL(file);
+}
+
 function clearImage() {
     document.getElementById("image-input").value = "";
+    document.getElementById("audio-input").value = "";
     document.getElementById("preview-area").style.display = "none";
+    document.getElementById("img-preview").style.display = "block";
+    document.getElementById("audio-preview-name").hidden = true;
+    document.getElementById("audio-preview-name").textContent = "";
     selectedBase64Image = null;
+    selectedAudioDataUrl = null;
+    selectedAudioName = "";
 }
 
 // ── Chat History (localStorage) ────────────────────────────
@@ -1384,9 +1426,9 @@ function getStorageKey() {
     return "mehta_chat_history_" + loggedInUserId;
 }
 
-function saveMessageToHistory(sender, text, image = null) {
+function saveMessageToHistory(sender, text, image = null, audio = null) {
     let history = JSON.parse(localStorage.getItem(getStorageKey())) || [];
-    history.push({ sender, text, image });
+    history.push({ sender, text, image, audio });
     if (history.length > 100) history = history.slice(-100);
     localStorage.setItem(getStorageKey(), JSON.stringify(history));
 }
@@ -1403,6 +1445,14 @@ function loadChatHistory() {
             img.src = `data:image/jpeg;base64,${item.image}`;
             img.className = "chat-image";
             div.appendChild(img);
+        }
+        if (item.audio) {
+            const audio = document.createElement("audio");
+            audio.src = item.audio;
+            audio.className = "chat-audio";
+            audio.controls = true;
+            audio.preload = "metadata";
+            div.appendChild(audio);
         }
         if (item.sender === "bot") renderMarkdownWithActions(item.text, div);
         else {
@@ -1496,7 +1546,7 @@ async function sendMessage() {
 
     const inputField = document.getElementById("user-input");
     const msg = inputField.value.trim();
-    if (!msg && !selectedBase64Image) return;
+    if (!msg && !selectedBase64Image && !selectedAudioDataUrl) return;
 
     const userDiv = document.createElement("div");
     userDiv.className = "message user";
@@ -1507,6 +1557,14 @@ async function sendMessage() {
         img.className = "chat-image";
         userDiv.appendChild(img);
     }
+    if (selectedAudioDataUrl) {
+        const audio = document.createElement("audio");
+        audio.src = selectedAudioDataUrl;
+        audio.className = "chat-audio";
+        audio.controls = true;
+        audio.preload = "metadata";
+        userDiv.appendChild(audio);
+    }
     if (msg) {
         const span = document.createElement("span");
         span.textContent = msg;
@@ -1516,10 +1574,12 @@ async function sendMessage() {
 
     chatBox.appendChild(userDiv);
     const imgPayload = selectedBase64Image;
+    const audioPayload = selectedAudioDataUrl;
 
     inputField.value = "";
     clearImage();
-    saveMessageToHistory("user", msg, imgPayload);
+    // Keep large audio blobs out of localStorage; the current message still shows its player.
+    saveMessageToHistory("user", msg || "[Audio attached]", imgPayload, null);
 
     const botDiv = document.createElement("div");
     botDiv.className = "message bot";
@@ -1535,6 +1595,7 @@ async function sendMessage() {
             body: JSON.stringify({
                 message: msg,
                 image: imgPayload ? `data:image/jpeg;base64,${imgPayload}` : null,
+                audio: audioPayload || null,
                 user_id: loggedInUserId
             })
         });
