@@ -140,6 +140,44 @@ def check_and_increment_limit(user_id):
         print(f"Limit check error: {limit_err}")
         return True, None
 
+
+
+def verified_user_id():
+    """Return the signed-in user's email from the Supabase access token."""
+    if not supabase:
+        return None
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.lower().startswith("bearer "):
+        return None
+    token = auth_header.split(" ", 1)[1].strip()
+    if not token:
+        return None
+    try:
+        auth_user = supabase.auth.get_user(token)
+        return getattr(auth_user.user, "email", None) if auth_user and auth_user.user else None
+    except Exception as error:
+        print(f"Auth verification error: {error}")
+        return None
+
+@app.route("/api/history", methods=["GET", "DELETE"])
+def history():
+    """Read or delete the signed-in user's persisted chat history."""
+    requested_user_id = (request.args.get("user_id") or "").strip()
+    user_id = verified_user_id()
+    if not user_id or (requested_user_id and requested_user_id != user_id):
+        return jsonify({"error": "Authentication required"}), 401
+    if not supabase:
+        return jsonify({"history": []}) if request.method == "GET" else jsonify({"ok": True})
+    try:
+        if request.method == "DELETE":
+            supabase.table("chat_history").delete().eq("user_id", user_id).execute()
+            return jsonify({"ok": True})
+        result = supabase.table("chat_history").select("id, message, reply, created_at").eq("user_id", user_id).order("id", desc=True).limit(100).execute()
+        return jsonify({"history": list(reversed(result.data or []))})
+    except Exception as error:
+        print(f"History storage error: {error}")
+        return jsonify({"history": [], "warning": "History storage is temporarily unavailable."})
+
 @app.route("/api/chat", methods=["POST"])
 def chat():
     try:
