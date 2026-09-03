@@ -10,11 +10,14 @@ from flask_cors import CORS
 from supabase import create_client, Client
 
 app = Flask(__name__)
-CORS(app)
+allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split(",") if origin.strip()]
+if not allowed_origins:
+    allowed_origins = ["https://mehta-ai-assistance.vercel.app", "http://localhost:3000", "http://localhost:5173"]
+CORS(app, resources={r"/api/*": {"origins": allowed_origins}}, methods=["GET", "POST", "DELETE"], allow_headers=["Content-Type", "Authorization"])
 
 # Supabase Configuration
 supabase_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 if supabase_url and supabase_key:
     try:
@@ -116,7 +119,7 @@ def call_groq(messages_payload, model_name, groq_api_key):
 
 def check_and_increment_limit(user_id):
     if user_id == ADMIN_EMAIL: return True, None
-    if not supabase: return True, None
+    if not supabase: return False, None
     try:
         now = datetime.datetime.utcnow()
         row = supabase.table("chat_limits").select("*").eq("user_id", user_id).execute()
@@ -185,7 +188,16 @@ def chat():
         user_message = data.get("message", "").strip()
         image_data_url = data.get("image", None)
         audio_data_url = data.get("audio", None)
-        user_id = data.get("user_id", "default_user")
+        user_id = verified_user_id()
+        if not user_id:
+            return jsonify({"error": "Authentication required"}), 401
+
+        if len(user_message) > 12000:
+            return jsonify({"error": "Message is too long. Maximum length is 12,000 characters."}), 413
+        if image_data_url and len(image_data_url) > 16 * 1024 * 1024:
+            return jsonify({"error": "Image is too large. Maximum encoded size is 16 MB."}), 413
+        if audio_data_url and len(audio_data_url) > 22 * 1024 * 1024:
+            return jsonify({"error": "Audio is too large. Maximum encoded size is 15 MB."}), 413
 
         if not user_message and "messages" in data:
             for msg in data["messages"]:
@@ -269,7 +281,7 @@ def chat():
             primary_model, fallback_model = TEXT_MODEL_PRIMARY, TEXT_MODEL_FALLBACK
 
         response, conn_err = call_groq(messages_payload, primary_model, groq_api_key)
-        if conn_err or response.status_code != 200:
+        if conn_err or response is None or response.status_code != 200:
             response, conn_err = call_groq(messages_payload, fallback_model, groq_api_key)
 
         if conn_err or response is None:
@@ -291,9 +303,14 @@ def chat():
             if source_urls:
                 reply += "\n\n**Live sources (retrieved " + retrieved_at + "):**\n" + "\n".join(f"- {url}" for url in source_urls)
 
+        history_saved = False
         if supabase:
-            supabase.table("chat_history").insert({"user_id": user_id, "message": user_message or "[Image]", "reply": reply}).execute()
-            
-        return jsonify({"reply": reply})
+            try:
+                supabase.table("chat_history").insert({"user_id": user_id, "message": user_message or "[Image]", "reply": reply}).execute()
+                history_saved = True
+            except Exception as history_error:
+                print(f"Chat history insert error: {history_error}")
+        return jsonify({"reply": reply, "history_saved": history_saved})
     except Exception as e:
-        return jsonify({"reply": f"Server Error: {str(e)}"}), 500
+        print(f"Unhandled chat error: {e}")
+        return jsonify({"error": "Unexpected server error. Please try again."}), 500
