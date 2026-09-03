@@ -1098,6 +1098,24 @@
         }
     </style>
 
+
+    <style id="mehta-assistant-actions">
+        .bot-actions { display: flex; align-items: center; gap: 6px; }
+        .bot-actions button {
+            width: 30px; height: 28px; min-width: 30px; min-height: 28px;
+            padding: 0; display: inline-flex; align-items: center; justify-content: center;
+            border: 1px solid var(--mehta-border, #e4e6eb); border-radius: 8px;
+            background: var(--mehta-surface, #fff); color: var(--mehta-muted, #69707d);
+            cursor: pointer; font-size: 16px; line-height: 1;
+            transition: background .18s ease, color .18s ease, transform .18s ease;
+        }
+        .bot-actions button:hover { background: var(--mehta-subtle, #f4f5f7); color: var(--mehta-text, #17181a); transform: translateY(-1px); }
+        .bot-actions button:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+        .bot-actions .action-done { color: #198754; }
+        .message.bot.is-regenerating { opacity: .68 !important; }
+        @media (max-width: 430px) { .bot-actions button { width: 32px; height: 30px; } }
+    </style>
+
 </head>
 <body>
 
@@ -1426,14 +1444,66 @@ function renderMarkdownWithActions(replyText, botDiv) {
 
     const actionsDiv = document.createElement("div");
     actionsDiv.className = "bot-actions";
-    
+    const sourceMessage = botDiv.dataset.sourceMessage || "";
+
+    const regenerateBtn = document.createElement("button");
+    regenerateBtn.type = "button";
+    regenerateBtn.title = sourceMessage ? "Regenerate response" : "Regenerate unavailable for this saved reply";
+    regenerateBtn.setAttribute("aria-label", regenerateBtn.title);
+    regenerateBtn.innerHTML = "↻";
+    regenerateBtn.disabled = !sourceMessage;
+    regenerateBtn.onclick = () => regenerateReply(botDiv, sourceMessage);
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.title = sourceMessage ? "Edit this question" : "Edit unavailable for this saved reply";
+    editBtn.setAttribute("aria-label", editBtn.title);
+    editBtn.innerHTML = "✎";
+    editBtn.disabled = !sourceMessage;
+    editBtn.onclick = () => {
+        const input = document.getElementById("user-input");
+        input.value = sourceMessage;
+        input.focus();
+        botDiv.previousElementSibling?.remove();
+        botDiv.remove();
+    };
+
     const copyMsgBtn = document.createElement("button");
+    copyMsgBtn.type = "button";
     copyMsgBtn.className = "copy-btn";
-    copyMsgBtn.innerText = "Copy 📋";
+    copyMsgBtn.title = "Copy response";
+    copyMsgBtn.setAttribute("aria-label", "Copy response");
+    copyMsgBtn.innerHTML = "▣";
     copyMsgBtn.onclick = () => copyToClipboard(replyText, copyMsgBtn, false);
-    actionsDiv.appendChild(copyMsgBtn);
-    
+
+    actionsDiv.append(regenerateBtn, editBtn, copyMsgBtn);
     botDiv.appendChild(actionsDiv);
+}
+
+
+async function regenerateReply(botDiv, sourceMessage) {
+    if (!sourceMessage || botDiv.classList.contains("is-regenerating")) return;
+    botDiv.classList.add("is-regenerating");
+    botDiv.innerHTML = `<span class="thinking-dots">Mehta is thinking</span>`;
+    try {
+        const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: sourceMessage, image: null, user_id: loggedInUserId })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            botDiv.innerHTML = `<span style="color:#b42318;">⚠️ ${data.error || data.reply || "Could not regenerate this response."}</span>`;
+        } else {
+            renderMarkdownWithActions(data.reply, botDiv);
+            saveMessageToHistory("bot", data.reply);
+        }
+    } catch (error) {
+        botDiv.innerHTML = `<span style="color:#b42318;">⚠️ Network error. Please try again.</span>`;
+    } finally {
+        botDiv.classList.remove("is-regenerating");
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
 }
 
 // ── Send Message ───────────────────────────────────────────
@@ -1468,6 +1538,7 @@ async function sendMessage() {
 
     const botDiv = document.createElement("div");
     botDiv.className = "message bot";
+    botDiv.dataset.sourceMessage = msg;
     botDiv.innerHTML = `<span class="thinking-dots">Mehta is thinking</span>`;
     chatBox.appendChild(botDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
