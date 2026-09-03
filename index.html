@@ -1195,6 +1195,28 @@
     }
 </style>
 
+
+<style id="mehta-persistence-settings-styles">
+    .settings-modal-backdrop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; background: rgba(15,15,14,.38); backdrop-filter: blur(5px); }
+    .settings-modal-backdrop[hidden] { display: none; }
+    .settings-modal { width: min(440px, 100%); border: 1px solid var(--mehta-border, #e5e5e2); border-radius: 18px; background: var(--mehta-surface, #fff); color: var(--mehta-text, #222); box-shadow: 0 24px 70px rgba(0,0,0,.2); overflow: hidden; }
+    .settings-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 14px; border-bottom: 1px solid var(--mehta-border, #e5e5e2); }
+    .settings-modal-head h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+    .settings-close { width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: inherit; font-size: 21px; cursor: pointer; }
+    .settings-close:hover { background: var(--mehta-soft, #f2f2ef); }
+    .settings-modal-body { padding: 18px 20px 22px; }
+    .settings-label { display: block; margin-bottom: 11px; color: var(--mehta-muted, #777); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    .theme-options { display: grid; gap: 8px; }
+    .theme-option { display: flex; align-items: center; gap: 11px; padding: 12px; border: 1px solid var(--mehta-border, #e5e5e2); border-radius: 11px; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+    .theme-option:hover { background: var(--mehta-soft, #f4f4f1); }
+    .theme-option:has(input:checked) { border-color: #6b63f6; background: color-mix(in srgb, #6b63f6 8%, transparent); }
+    .theme-option input { accent-color: #625bf5; }
+    .theme-option strong { display: block; font-size: 14px; }
+    .theme-option small { display: block; margin-top: 2px; color: var(--mehta-muted, #777); font-size: 12px; }
+    .settings-note { margin: 17px 0 0; color: var(--mehta-muted, #777); font-size: 12px; line-height: 1.5; }
+    @media (max-width: 520px) { .settings-modal-backdrop { padding: 12px; align-items: end; } .settings-modal { border-radius: 16px 16px 10px 10px; } }
+</style>
+
 </head>
 <body>
 
@@ -1215,7 +1237,7 @@
     <div class="sidebar-footer">
         <div class="account-popover" id="account-popover" hidden>
             <div class="account-popover-email" id="account-popover-email">Signed-in account</div>
-            <button class="account-menu-item" type="button" onclick="showSidebarNotice('Settings will be available soon.')"><span>⚙</span><span>Settings</span></button>
+            <button class="account-menu-item" type="button" onclick="openSettingsModal()"><span>⚙</span><span>Settings</span></button>
             <button class="account-menu-item" type="button" onclick="showSidebarNotice('Language selection will be available soon.')"><span>文</span><span>Language</span></button>
             <button class="account-menu-item" type="button" onclick="showSidebarNotice('How can we help?')"><span>?</span><span>Get help</span></button>
             <div class="account-menu-divider"></div>
@@ -1325,6 +1347,34 @@ function closeAccountMenu() {
     if (menu) menu.hidden = true;
     trigger?.setAttribute("aria-expanded", "false");
 }
+
+function getThemePreference() {
+    const saved = localStorage.getItem(THEME_KEY);
+    return saved === "light" || saved === "dark" ? saved : "system";
+}
+function syncThemeSettings() {
+    const mode = getThemePreference();
+    document.querySelectorAll('input[name="theme-preference"]').forEach(input => { input.checked = input.value === mode; });
+}
+function setThemePreference(mode) {
+    if (mode === "system") localStorage.removeItem(THEME_KEY);
+    else localStorage.setItem(THEME_KEY, mode);
+    applyTheme(mode === "system" ? (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light") : mode);
+    syncThemeSettings();
+}
+function openSettingsModal() {
+    closeAccountMenu();
+    syncThemeSettings();
+    const modal = document.getElementById("settings-modal-backdrop");
+    if (modal) { modal.hidden = false; document.body.classList.add("modal-open"); }
+}
+function closeSettingsModal() {
+    const modal = document.getElementById("settings-modal-backdrop");
+    if (modal) modal.hidden = true;
+    document.body.classList.remove("modal-open");
+}
+document.addEventListener("keydown", event => { if (event.key === "Escape") { closeSettingsModal(); closeAccountMenu(); } });
+
 function toggleSidebar() { document.body.classList.toggle("sidebar-open"); }
 function closeSidebar() { document.body.classList.remove("sidebar-open"); }
 function showSidebarNotice(message) {
@@ -1362,6 +1412,22 @@ document.addEventListener("click", event => {
 });
 </script>
 
+    
+<div class="settings-modal-backdrop" id="settings-modal-backdrop" hidden onclick="if(event.target===this) closeSettingsModal()">
+    <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+        <div class="settings-modal-head"><h2 id="settings-modal-title">Settings</h2><button class="settings-close" type="button" aria-label="Close settings" onclick="closeSettingsModal()">×</button></div>
+        <div class="settings-modal-body">
+            <span class="settings-label">Appearance</span>
+            <div class="theme-options" role="radiogroup" aria-label="Theme preference">
+                <label class="theme-option"><input type="radio" name="theme-preference" value="system" onchange="setThemePreference('system')"><span><strong>System</strong><small>Use your device theme automatically</small></span></label>
+                <label class="theme-option"><input type="radio" name="theme-preference" value="light" onchange="setThemePreference('light')"><span><strong>Light</strong><small>Bright and clean Mehta.ai interface</small></span></label>
+                <label class="theme-option"><input type="radio" name="theme-preference" value="dark" onchange="setThemePreference('dark')"><span><strong>Dark</strong><small>Comfortable black interface for night use</small></span></label>
+            </div>
+            <p class="settings-note">Your theme preference is stored on this device. Chat history is kept locally and synced to your signed-in account when the backend database is available.</p>
+        </div>
+    </section>
+</div>
+
     <script>
         // ── Theme Toggle Logic ──
 const THEME_KEY = "mehta_theme";
@@ -1389,6 +1455,7 @@ function toggleTheme() {
 }
 
 applyTheme(preferredTheme());
+    syncThemeSettings();
 if (!localStorage.getItem(THEME_KEY) && window.matchMedia) {
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", event => {
         applyTheme(event.matches ? "dark" : "light");
@@ -1458,6 +1525,7 @@ _supabase.auth.onAuthStateChange((event, session) => {
         updateLoginUI(session.user);
         if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
             loadChatHistory();
+            loadRemoteHistory();
         }
         authCheckDone = true;
         revealApp();
@@ -1580,7 +1648,45 @@ function clearImage() {
     selectedAudioName = "";
 }
 
-// ── Chat History (localStorage) ────────────────────────────
+
+
+async function getSessionHeaders() {
+    try {
+        const { data } = await _supabase.auth.getSession();
+        return data?.session?.access_token ? { "Authorization": `Bearer ${data.session.access_token}` } : {};
+    } catch (_) { return {}; }
+}
+
+async function loadRemoteHistory() {
+    if (!loggedInUserId || loggedInUserId === "default_user") return;
+    try {
+        const response = await fetch(`/api/history?user_id=${encodeURIComponent(loggedInUserId)}`, { headers: { "Accept": "application/json", ...(await getSessionHeaders()) } });
+        if (!response.ok) return;
+        const payload = await response.json();
+        const remote = Array.isArray(payload.history) ? payload.history : [];
+        if (!remote.length) return;
+        let local = JSON.parse(localStorage.getItem(getStorageKey())) || [];
+        const known = new Set();
+        for (let i = 0; i < local.length - 1; i++) if (local[i].sender === "user" && local[i + 1].sender === "bot") known.add(`${local[i].text}\n${local[i + 1].text}`);
+        remote.forEach(row => {
+            const key = `${row.message || ""}\n${row.reply || ""}`;
+            if (known.has(key)) return;
+            if (row.message) local.push({ sender: "user", text: row.message, image: null, audio: null });
+            if (row.reply) local.push({ sender: "bot", text: row.reply, image: null, audio: null });
+            known.add(key);
+        });
+        local = local.slice(-100);
+        localStorage.setItem(getStorageKey(), JSON.stringify(local));
+        renderSavedChats();
+        loadChatHistory();
+    } catch (error) { console.warn("Remote history unavailable", error); }
+}
+async function clearRemoteHistory() {
+    if (!loggedInUserId || loggedInUserId === "default_user") return;
+    try { await fetch(`/api/history?user_id=${encodeURIComponent(loggedInUserId)}`, { method: "DELETE", headers: await getSessionHeaders() }); } catch (_) {}
+}
+
+// ── Chat History (localStorage + backend sync) ─────────────
 const chatBox = document.getElementById("chat-box");
 
 function getStorageKey() {
@@ -1631,6 +1737,8 @@ function loadChatHistory() {
 function clearChatHistory() {
     if (confirm("Pura chat history delete karna hai?")) {
         localStorage.removeItem(getStorageKey());
+        clearRemoteHistory();
+        if (typeof renderSavedChats === "function") renderSavedChats();
         chatBox.innerHTML = '<div class="message bot">✨ Hello! I\'m Mehta, your intelligent assistant. Ask me anything!</div>';
     }
 }
