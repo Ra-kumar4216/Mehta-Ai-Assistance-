@@ -28,6 +28,7 @@ TEXT_MODEL_PRIMARY = os.getenv("GROQ_TEXT_MODEL", "openai/gpt-oss-120b")
 TEXT_MODEL_FALLBACK = os.getenv("GROQ_TEXT_MODEL_FALLBACK", "qwen/qwen3.6-27b")
 VISION_MODEL_PRIMARY = os.getenv("GROQ_VISION_MODEL", "qwen/qwen3.8-27b")
 VISION_MODEL_FALLBACK = os.getenv("GROQ_VISION_MODEL_FALLBACK", "qwen/qwen3.6-27b")
+AUDIO_MODEL = os.getenv("GROQ_AUDIO_MODEL", "whisper-large-v3-turbo")
 
 ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "ratankumarmetha@gmail.com")
 DAILY_LIMIT = 50
@@ -53,6 +54,36 @@ def internet_search(query):
     except Exception as e:
         print(f"Search Error: {e}")
     return ""
+
+
+def transcribe_audio(audio_data_url, groq_api_key):
+    if not audio_data_url or not audio_data_url.startswith("data:audio/"):
+        return None, "Only data audio URLs are accepted."
+    try:
+        header, encoded = audio_data_url.split(",", 1)
+        mime_type = header[5:].split(";", 1)[0].lower()
+        audio_bytes = base64.b64decode(encoded, validate=True)
+        if len(audio_bytes) > 15 * 1024 * 1024:
+            return None, "Audio file is too large. Maximum size is 15 MB."
+        extension = mime_type.split("/")[-1].split("+", 1)[0] or "webm"
+        files = {"file": (f"mehta-audio.{extension}", audio_bytes, mime_type)}
+        data = {"model": AUDIO_MODEL, "response_format": "json"}
+        response = requests.post(
+            "https://api.groq.com/openai/v1/audio/transcriptions",
+            headers={"Authorization": f"Bearer {groq_api_key}"},
+            files=files, data=data, timeout=45
+        )
+        if response.status_code != 200:
+            print(f"Audio transcription error {response.status_code}: {response.text[:300]}")
+            return None, "Audio transcription failed."
+        transcript = response.json().get("text", "").strip()
+        return (transcript, None) if transcript else (None, "No speech was detected in the audio.")
+    except (ValueError, base64.binascii.Error) as error:
+        print(f"Audio decode error: {error}")
+        return None, "Invalid audio data."
+    except Exception as error:
+        print(f"Audio transcription exception: {error}")
+        return None, "Audio service is unavailable right now."
 
 def call_groq(messages_payload, model_name, groq_api_key):
     headers = {"Authorization": f"Bearer {groq_api_key}", "Content-Type": "application/json"}
@@ -95,6 +126,7 @@ def chat():
         data = request.json or {}
         user_message = data.get("message", "").strip()
         image_data_url = data.get("image", None)
+        audio_data_url = data.get("audio", None)
         user_id = data.get("user_id", "default_user")
 
         if not user_message and "messages" in data:
@@ -107,8 +139,8 @@ def chat():
                             elif item.get("type") == "image_url": image_data_url = item.get("image_url", {}).get("url", None)
                     elif isinstance(content, str): user_message = content.strip()
 
-        if not user_message and not image_data_url:
-            return jsonify({"error": "Message or image required"}), 400
+        if not user_message and not image_data_url and not audio_data_url:
+            return jsonify({"error": "Message, image, or audio required"}), 400
 
         allowed, reset_at = check_and_increment_limit(user_id)
         if not allowed:
@@ -116,6 +148,12 @@ def chat():
 
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key: return jsonify({"reply": "API Key missing"}), 500
+
+        if audio_data_url:
+            transcript, audio_error = transcribe_audio(audio_data_url, groq_api_key)
+            if audio_error:
+                return jsonify({"error": audio_error}), 422
+            user_message = f"[Audio transcript]\n{transcript}"
 
         today_date = datetime.datetime.now().strftime("%d %B %Y")
         system_instruction = (
