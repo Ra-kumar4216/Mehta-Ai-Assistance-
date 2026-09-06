@@ -223,7 +223,10 @@ def chat():
             transcript, audio_error = transcribe_audio(audio_data_url, groq_api_key)
             if audio_error:
                 return jsonify({"error": audio_error}), 422
-            user_message = f"[Audio transcript]\n{transcript}"
+            if user_message:
+                user_message = f"{user_message}\n\n[Audio transcript]\n{transcript}"
+            else:
+                user_message = f"[Audio transcript]\n{transcript}"
 
         today_date = datetime.datetime.now().strftime("%d %B %Y")
         system_instruction = (
