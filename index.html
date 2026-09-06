@@ -1614,7 +1614,10 @@ function handleImageSelect() {
         document.getElementById("img-preview").src = e.target.result;
         document.getElementById("img-preview").style.display = "block";
         document.getElementById("preview-area").style.display = "flex";
-        selectedBase64Image = e.target.result.split(',')[1];
+        // keep the full data URL (data:image/<real-mime>;base64,....) so the
+        // backend's own mime detection sees the correct type instead of us
+        // forcing a wrong "jpeg" guess later.
+        selectedBase64Image = e.target.result;
     };
     reader.readAsDataURL(file);
 }
@@ -1710,7 +1713,7 @@ function loadChatHistory() {
         div.className = `message ${item.sender}`;
         if (item.image) {
             const img = document.createElement("img");
-            img.src = `data:image/jpeg;base64,${item.image}`;
+            img.src = item.image; // already a full data URL with correct mime
             img.className = "chat-image";
             div.appendChild(img);
         }
@@ -1823,7 +1826,7 @@ async function sendMessage() {
 
     if (selectedBase64Image) {
         const img = document.createElement("img");
-        img.src = `data:image/jpeg;base64,${selectedBase64Image}`;
+        img.src = selectedBase64Image; // already a full data URL with correct mime
         img.className = "chat-image";
         userDiv.appendChild(img);
     }
@@ -1864,7 +1867,7 @@ async function sendMessage() {
             headers: { "Content-Type": "application/json", ...(await getSessionHeaders()) },
             body: JSON.stringify({
                 message: msg,
-                image: imgPayload ? `data:image/jpeg;base64,${imgPayload}` : null,
+                image: imgPayload || null,
                 audio: audioPayload || null
             })
         });
