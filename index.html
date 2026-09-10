@@ -1217,6 +1217,72 @@
     @media (max-width: 520px) { .settings-modal-backdrop { padding: 12px; align-items: end; } .settings-modal { border-radius: 16px 16px 10px 10px; } }
 </style>
 
+<style id="mehta-mobile-stability-fix">
+    /* Keep the document fixed while the internal conversation scrolls. This
+       prevents the browser page from jumping when the composer gets focus. */
+    html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+    body { min-height: 100%; }
+    .app-shell,
+    .main-shell {
+        height: 100dvh;
+        min-height: 0;
+        overflow: hidden;
+    }
+    .main-shell { flex: 1 1 auto; }
+    .main-shell > .login-wrapper { flex: 0 0 auto; }
+    .main-shell > .chat-container {
+        height: auto !important;
+        flex: 1 1 auto;
+        overflow: hidden;
+    }
+    .chat-messages {
+        min-height: 0;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+    .composer-dock { flex-shrink: 0; }
+
+    /* The account actions remain available from the sidebar account menu;
+       do not duplicate them in the top edge where they crowd the composer. */
+    .main-shell > .login-wrapper .right-controls { display: none !important; }
+    .main-shell > .login-wrapper { justify-content: flex-start; }
+
+    /* Keep the mobile sidebar trigger attached to the viewport, not the
+       scrolling conversation. */
+    .sidebar-mobile-toggle {
+        position: fixed;
+        top: max(8px, env(safe-area-inset-top));
+        left: 10px;
+        z-index: 55;
+        width: 36px;
+        height: 34px;
+        padding: 0;
+        background: var(--mehta-surface, #fff);
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    body.sidebar-open { overflow: hidden; }
+
+    @media (max-width: 760px) {
+        .main-shell > .login-wrapper {
+            min-height: 40px;
+            padding-left: 56px;
+            padding-right: 10px;
+        }
+        .workspace-logo { max-width: 132px; }
+    }
+    @media (min-width: 761px) {
+        .sidebar-mobile-toggle { display: none !important; }
+    }
+    @media (max-width: 430px) {
+        .main-shell > .login-wrapper { padding-left: 54px; }
+    }
+</style>
+
 </head>
 <body>
 
