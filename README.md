@@ -1,3 +1,9 @@
+<div align="center">
+
+<img src="assets/mehta-logo.png" alt="Mehta.ai logo" height="80">
+
+</div>
+
 # Mehta AI
 
 **Mehta AI** is a full‑stack, multimodal AI chat assistant — a Flask/Python backend on Vercel serverless functions, a vanilla HTML/CSS/JS frontend, Supabase for auth and persistence, and Groq for LLM inference (text, vision, and audio transcription).
@@ -84,10 +90,18 @@ pip install -r requirements.txt
 
 ### Run locally
 
+`api/index.py` mein local server start karne wala code (`app.run`) nahi hai, isliye `python api/index.py` kuch run nahi karega. Do tarike:
+
 ```bash
-python api/index.py
+# Option 1: Vercel CLI (recommended, vercel.json ke routes ke saath)
+npm i -g vercel
+vercel dev
+
+# Option 2: Flask CLI (sirf API)
+flask --app api/index run --port 5000
 ```
-Then serve `index.html` / `signin.html` with any static server and point the frontend's Supabase config at your project.
+
+Frontend ke liye `index.html` / `signin.html` ko kisi static server se serve karo aur Supabase config apne project ka rakho. Default CORS sirf `http://localhost:3000` aur `http://localhost:5173` allow karta hai, to static server in ports par chalao ya `ALLOWED_ORIGINS` set karo.
 
 ### Deploy
 The repo is pre-configured for **Vercel** — `vercel.json` routes all `/api/*` traffic to the Flask function. Push to your Vercel-linked GitHub repo, set the environment variables above in the Vercel dashboard, and deploy.
