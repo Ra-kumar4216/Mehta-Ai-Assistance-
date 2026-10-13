@@ -1,118 +1,171 @@
 <div align="center">
 
-<img src="assets/mehta-logo.png" alt="Mehta.ai logo" height="80">
+<img src="assets/logo.gif" alt="Mehta.ai logo" width="560"/>
+
+<br/>
+
+**A full-stack AI chat assistant with streaming responses, document-aware answers (RAG), secure sign-in and server-side rate limiting.**
+
+<br/>
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit-6366f1?style=for-the-badge&logo=vercel&logoColor=white)](https://mehta-ai-assistance.vercel.app)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-Backend-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Auth%20%26%20DB-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Groq](https://img.shields.io/badge/Groq-LLM%20API-F55036?style=for-the-badge)](https://groq.com/)
 
 </div>
 
-# Mehta AI
+---
 
-**Mehta AI** is a full‑stack, multimodal AI chat assistant — a Flask/Python backend on Vercel serverless functions, a vanilla HTML/CSS/JS frontend, Supabase for auth and persistence, and Groq for LLM inference (text, vision, and audio transcription).
+## 📖 Overview
 
-🔗 **Live app:** [mehta-ai-assistance.vercel.app](https://mehta-ai-assistance.vercel.app)
+**Mehta AI** is a web-based AI assistant I built end to end: Flask backend, Supabase for authentication and data, and the Groq API for fast LLM inference. It started as a basic chatbot and has grown through several iterations into an app with real-time streaming, document upload, and usage limits enforced on the server.
+
+> 🌐 **Live:** [mehta-ai-assistance.vercel.app](https://mehta-ai-assistance.vercel.app)
 
 ---
 
-## Features
+## ✨ Features
 
-- **Multimodal chat** — text, image (vision), and audio (speech‑to‑text via Whisper) all in one conversation flow
-- **Live web grounding** — detects "current info" queries (news, weather, who's the CM/PM, etc., in English and Hindi) and injects fresh DuckDuckGo search results into the prompt instead of letting the model guess from stale training data
-- **Automatic model fallback** — every request tries a primary Groq model first and silently falls back to a secondary model if the primary fails
-- **Google OAuth + email auth** via Supabase, with per‑user chat history and history persistence
-- **Per‑user daily rate limiting** (50 messages/day, admin email exempt) enforced server‑side and tracked in Supabase
-- **Voice input** using the Web Speech API, plus dedicated image/audio attachment buttons
-- **Light / dark / system theme**, saved locally per device
-- **Sign‑in page** with tabbed Sign In / Create Account flows and Google one‑click auth
+| | Feature | Description |
+|---|---|---|
+| 💬 | **AI Chat** | Conversational assistant powered by LLMs served through the Groq API |
+| ⚡ | **Streaming Responses** | Answers stream token by token using Server-Sent Events (SSE) |
+| 📄 | **Document Q&A (RAG)** | Upload a document and ask questions grounded in its content |
+| 🔐 | **Authentication** | Sign-in / sign-up flow backed by Supabase |
+| 🚦 | **Server-side Rate Limiting** | Daily usage limits enforced in Supabase so they can't be bypassed from the browser |
+| 🎨 | **Modern UI** | Responsive interface with animated sign-in page |
+| ☁️ | **Deployed on Vercel** | Production deployment with environment-based configuration |
 
-## Tech Stack
+---
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart LR
+    U[👤 User / Browser] -->|HTTPS| F[Flask App]
+    F -->|Auth + usage limits| S[(Supabase)]
+    F -->|Prompt + context| G[Groq API]
+    G -->|Streamed tokens| F
+    F -->|SSE stream| U
+    U -->|Upload document| F
+    F -->|Chunk + retrieve| R[RAG Pipeline]
+    R -->|Relevant context| G
+```
+
+---
+
+## 🧰 Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Backend | Python, Flask, Flask‑CORS |
-| Hosting | Vercel serverless functions (`api/index.py`) |
-| Auth & DB | Supabase (Auth + Postgres tables: `chat_history`, `chat_limits`) |
-| LLM inference | Groq API (chat, vision, and Whisper audio models) |
-| Frontend | HTML5, CSS3, vanilla JavaScript, Supabase JS client |
-| Web search | DuckDuckGo HTML scrape (no external search API key needed) |
+| **Backend** | Python, Flask |
+| **LLM Inference** | Groq API |
+| **Auth & Database** | Supabase |
+| **Frontend** | HTML, CSS, JavaScript |
+| **Streaming** | Server-Sent Events (SSE) |
+| **Deployment** | Vercel |
 
-## Project Structure
+---
 
-```
-.
-├── api/
-│   └── index.py        # Flask app — /api/chat and /api/history endpoints
-├── assets/              # Static media (login screen video, etc.)
-├── index.html           # Main chat UI
-├── signin.html           # Sign in / sign up page
-├── requirements.txt      # Python dependencies
-└── vercel.json           # Routes /api/* to the Flask serverless function
-```
-
-## API
-
-### `POST /api/chat`
-Accepts `message` (text), `image` (base64 data URL), and/or `audio` (base64 data URL). Requires a Supabase bearer token. Returns `{ reply, history_saved }`.
-
-### `GET /api/history`
-Returns the signed‑in user's last 100 chat turns.
-
-### `DELETE /api/history`
-Clears the signed‑in user's chat history.
-
-Both endpoints authenticate via an `Authorization: Bearer <supabase_access_token>` header.
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.9+
-- A [Supabase](https://supabase.com) project (Auth + two tables: `chat_history`, `chat_limits`)
-- A [Groq](https://console.groq.com) API key
 
-### Setup
+- Python 3.10+
+- A [Supabase](https://supabase.com/) project
+- A [Groq](https://console.groq.com/) API key
+
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Ra-kumar4216/Mehta-Ai-Assistance-.git
 cd Mehta-Ai-Assistance-
+```
+
+### 2. Create a virtual environment and install dependencies
+
+```bash
+python -m venv venv
+
+# macOS / Linux
+source venv/bin/activate
+# Windows
+venv\Scripts\activate
+
 pip install -r requirements.txt
 ```
 
-### Environment Variables
+### 3. Configure environment variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `GROQ_API_KEY` | Yes | Groq API key used for chat/vision/audio inference |
-| `SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key (server-side only) |
-| `ALLOWED_ORIGINS` | No | Comma‑separated CORS allow‑list (defaults to the deployed domain + localhost) |
-| `GROQ_TEXT_MODEL` / `GROQ_TEXT_MODEL_FALLBACK` | No | Override the default text models |
-| `GROQ_VISION_MODEL` / `GROQ_VISION_MODEL_FALLBACK` | No | Override the default vision models |
-| `GROQ_AUDIO_MODEL` | No | Override the default Whisper model |
-| `ADMIN_EMAIL` | No | Email exempt from the daily message limit |
+Create a `.env` file in the project root:
 
-### Run locally
-
-`api/index.py` mein local server start karne wala code (`app.run`) nahi hai, isliye `python api/index.py` kuch run nahi karega. Do tarike:
-
-```bash
-# Option 1: Vercel CLI (recommended, vercel.json ke routes ke saath)
-npm i -g vercel
-vercel dev
-
-# Option 2: Flask CLI (sirf API)
-flask --app api/index run --port 5000
+```env
+GROQ_API_KEY=your_groq_api_key
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_key
+SECRET_KEY=your_flask_secret_key
 ```
 
-Frontend ke liye `index.html` / `signin.html` ko kisi static server se serve karo aur Supabase config apne project ka rakho. Default CORS sirf `http://localhost:3000` aur `http://localhost:5173` allow karta hai, to static server in ports par chalao ya `ALLOWED_ORIGINS` set karo.
+> ⚠️ Never commit your `.env` file. Make sure it is listed in `.gitignore`.
 
-### Deploy
-The repo is pre-configured for **Vercel** — `vercel.json` routes all `/api/*` traffic to the Flask function. Push to your Vercel-linked GitHub repo, set the environment variables above in the Vercel dashboard, and deploy.
+### 4. Run the app
 
-## Security Notes
-- The Supabase key embedded in `index.html` is the **publishable/anon** key, safe for client-side use — the actual authorization boundary is enforced server-side via `verified_user_id()`, which validates the bearer token on every request.
-- Responses to "current info" queries are grounded only in live search results, with the retrieval time and source URLs surfaced to the user; the model is explicitly instructed to treat that injected context as untrusted, non-instruction-following data.
+```bash
+python app.py
+```
 
-## License
-No license file is currently included in this repository — all rights reserved by default unless the author adds one.
+Open **http://localhost:5000** in your browser.
 
-## Author
-**Ratan Kumar Metha**
-[GitHub](https://github.com/Ra-kumar4216) · [LinkedIn](https://linkedin.com/in/ratan-kumar-metha) · [Portfolio](https://ratankumar-portfolio.vercel.app)
+---
+
+## 🔒 Security Notes
+
+- API keys and secrets live in environment variables, never in source code.
+- Rate limits are enforced **server-side** in Supabase, not in client-side storage.
+- Authentication is handled by Supabase; protected routes verify the session on the server.
+
+---
+
+## 🛣️ Roadmap
+
+- [ ] Conversation history sidebar
+- [ ] Multi-document RAG with source citations
+- [ ] Model selector in the UI
+- [ ] Unit and integration tests
+- [ ] Dockerfile for one-command setup
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues and feature requests are welcome.
+
+1. Fork the project
+2. Create your feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m "Add amazing feature"`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
+
+---
+
+## 👨‍💻 Author
+
+**Ratan Kumar** — Final-year BCA student | Java Full Stack & AI/ML Developer
+
+[![GitHub](https://img.shields.io/badge/GitHub-Ra--kumar4216-181717?style=flat-square&logo=github)](https://github.com/Ra-kumar4216)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-ratan--kumar--metha-0A66C2?style=flat-square&logo=linkedin)](https://linkedin.com/in/ratan-kumar-metha)
+[![Portfolio](https://img.shields.io/badge/Portfolio-ratankumar--portfolio-000000?style=flat-square&logo=vercel)](https://ratankumar-portfolio.vercel.app)
+
+<div align="center">
+
+⭐ If you found this project useful, consider giving it a star!
+
+</div>
