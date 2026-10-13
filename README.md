@@ -1,6 +1,10 @@
 <div align="center">
 
-<img src="assets/logo.gif" alt="Mehta.ai logo" width="560"/>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="assets/logo.png">
+  <img src="assets/logo.png" alt="Mehta.ai logo" width="480">
+</picture>
 
 <br/>
 
@@ -158,7 +162,7 @@ Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
 
 ## 👨‍💻 Author
 
-**Ratan Kumar** — Final-year BCA student | Java Full Stack & AI/ML Developer
+**Ratan Kumar** — Software Engineer | Java Full Stack & AI/ML Developer
 
 [![GitHub](https://img.shields.io/badge/GitHub-Ra--kumar4216-181717?style=flat-square&logo=github)](https://github.com/Ra-kumar4216)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-ratan--kumar--metha-0A66C2?style=flat-square&logo=linkedin)](https://linkedin.com/in/ratan-kumar-metha)
