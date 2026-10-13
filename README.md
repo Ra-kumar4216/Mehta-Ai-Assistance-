@@ -1,5 +1,5 @@
 <div align="center">
-<img src="assets/logo.png" alt="Mehta.ai Logo" width="520" />   <h1>Mehta.ai</h1>   <p><strong>A full-stack AI chat assistant with streaming responses, document-aware answers (RAG), secure sign-in and server-side rate limiting.</strong></p>   <p>
+<img src="assets/logo.png" alt="Mehta.ai Logo" width="520" />    <p><strong>A full-stack AI chat assistant with streaming responses, document-aware answers (RAG), secure sign-in and server-side rate limiting.</strong></p>   <p>
     <a href="https://mehta-ai-assistance.vercel.app">
       <img src="https://img.shields.io/badge/Live%20Demo-Visit-6366f1?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
     </a>
