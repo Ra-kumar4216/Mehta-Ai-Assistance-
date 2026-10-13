@@ -1,23 +1,21 @@
 <div align="center">
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.png">
-  <source media="(prefers-color-scheme: light)" srcset="assets/logo.png">
-  <img src="assets/logo.png" alt="Mehta.ai logo" width="480">
-</picture>
-
-<br/>
-
-**A full-stack AI chat assistant with streaming responses, document-aware answers (RAG), secure sign-in and server-side rate limiting.**
-
-<br/>
-
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit-6366f1?style=for-the-badge&logo=vercel&logoColor=white)](https://mehta-ai-assistance.vercel.app)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-Backend-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-Auth%20%26%20DB-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![Groq](https://img.shields.io/badge/Groq-LLM%20API-F55036?style=for-the-badge)](https://groq.com/)
-
+<img src="assets/logo.png" alt="Mehta.ai Logo" width="520" />   <h1>Mehta.ai</h1>   <p><strong>A full-stack AI chat assistant with streaming responses, document-aware answers (RAG), secure sign-in and server-side rate limiting.</strong></p>   <p>
+    <a href="https://mehta-ai-assistance.vercel.app">
+      <img src="https://img.shields.io/badge/Live%20Demo-Visit-6366f1?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Demo" />
+    </a>
+    <a href="https://www.python.org/">
+      <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+    </a>
+    <a href="https://flask.palletsprojects.com/">
+      <img src="https://img.shields.io/badge/Flask-Backend-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask" />
+    </a>
+    <a href="https://supabase.com/">
+      <img src="https://img.shields.io/badge/Supabase-Auth%20%26%20DB-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
+    </a>
+    <a href="https://groq.com/">
+      <img src="https://img.shields.io/badge/Groq-LLM%20API-F55036?style=for-the-badge" alt="Groq" />
+    </a>
+  </p>
 </div>
 
 ---
@@ -32,8 +30,8 @@
 
 ## ✨ Features
 
-| | Feature | Description |
-|---|---|---|
+|  | Feature | Description |
+| --- | --- | --- |
 | 💬 | **AI Chat** | Conversational assistant powered by LLMs served through the Groq API |
 | ⚡ | **Streaming Responses** | Answers stream token by token using Server-Sent Events (SSE) |
 | 📄 | **Document Q&A (RAG)** | Upload a document and ask questions grounded in its content |
@@ -63,7 +61,7 @@ flowchart LR
 ## 🧰 Tech Stack
 
 | Layer | Technology |
-|---|---|
+| --- | --- |
 | **Backend** | Python, Flask |
 | **LLM Inference** | Groq API |
 | **Auth & Database** | Supabase |
@@ -78,7 +76,9 @@ flowchart LR
 ### Prerequisites
 
 - Python 3.10+
+
 - A [Supabase](https://supabase.com/) project
+
 - A [Groq](https://console.groq.com/) API key
 
 ### 1. Clone the repository
@@ -95,6 +95,7 @@ python -m venv venv
 
 # macOS / Linux
 source venv/bin/activate
+
 # Windows
 venv\Scripts\activate
 
@@ -105,7 +106,7 @@ pip install -r requirements.txt
 
 Create a `.env` file in the project root:
 
-```env
+```
 GROQ_API_KEY=your_groq_api_key
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_KEY=your_supabase_key
@@ -120,14 +121,16 @@ SECRET_KEY=your_flask_secret_key
 python app.py
 ```
 
-Open **http://localhost:5000** in your browser.
+Open [**http://localhost:5000**](http://localhost:5000) in your browser.
 
 ---
 
 ## 🔒 Security Notes
 
 - API keys and secrets live in environment variables, never in source code.
+
 - Rate limits are enforced **server-side** in Supabase, not in client-side storage.
+
 - Authentication is handled by Supabase; protected routes verify the session on the server.
 
 ---
@@ -135,9 +138,13 @@ Open **http://localhost:5000** in your browser.
 ## 🛣️ Roadmap
 
 - [ ] Conversation history sidebar
+
 - [ ] Multi-document RAG with source citations
+
 - [ ] Model selector in the UI
+
 - [ ] Unit and integration tests
+
 - [ ] Dockerfile for one-command setup
 
 ---
@@ -147,10 +154,14 @@ Open **http://localhost:5000** in your browser.
 Contributions, issues and feature requests are welcome.
 
 1. Fork the project
-2. Create your feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m "Add amazing feature"`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+
+1. Create your feature branch: `git checkout -b feature/amazing-feature`
+
+1. Commit your changes: `git commit -m "Add amazing feature"`
+
+1. Push to the branch: `git push origin feature/amazing-feature`
+
+1. Open a Pull Request
 
 ---
 
@@ -169,7 +180,5 @@ Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
 [![Portfolio](https://img.shields.io/badge/Portfolio-ratankumar--portfolio-000000?style=flat-square&logo=vercel)](https://ratankumar-portfolio.vercel.app)
 
 <div align="center">
-
-⭐ If you found this project useful, consider giving it a star!
-
+<strong>⭐ If you found this project useful, consider giving it a star!</strong>
 </div>
